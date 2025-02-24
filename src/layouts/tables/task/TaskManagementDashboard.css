@@ -1,0 +1,350 @@
+/* TaskManagementDashboard.css */
+:root {
+  --primary-blue: #3b82f6;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+}
+html {
+  margin: 0;
+  padding: 0;
+}
+.dashboard-container {
+  min-height: 100vh;
+  background-color: var(--gray-100);
+  padding: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .dashboard-container {
+    padding: 2rem;
+  }
+}
+
+.dashboard-content {
+  max-width: 80rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.dashboard-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 640px) {
+  .dashboard-title {
+    font-size: 1.875rem;
+    margin-bottom: 2rem;
+  }
+}
+
+.grid-container {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+  .grid-container {
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-container {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.section-container {
+  background-color: white;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 640px) {
+  .section-container {
+    padding: 1.5rem;
+    border-radius: 1rem;
+  }
+}
+
+.section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 640px) {
+  .section-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+@media (min-width: 640px) {
+  .section-title {
+    font-size: 1.5rem;
+  }
+}
+
+.tasks-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 480px) {
+  .tasks-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .tasks-grid {
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+}
+
+.task-cube {
+  background: linear-gradient(to bottom right, white, var(--gray-50));
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transform: scale(1);
+  transition: all 0.3s;
+  min-width: 0; /* Ensures text truncation works */
+}
+
+@media (min-width: 640px) {
+  .task-cube {
+    padding: 1rem;
+    border-radius: 0.75rem;
+  }
+}
+
+.task-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 0.375rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 640px) {
+  .task-title {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+.progress-container {
+  margin-bottom: 0.375rem;
+}
+
+@media (min-width: 640px) {
+  .progress-container {
+    margin-bottom: 0.5rem;
+  }
+}
+
+.progress-bar {
+  width: 100%;
+  height: 0.375rem;
+  background-color: var(--gray-200);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .progress-bar {
+    height: 0.5rem;
+  }
+}
+
+.remaining-time {
+  font-size: 0.75rem;
+  color: var(--gray-600);
+}
+
+@media (min-width: 640px) {
+  .remaining-time {
+    font-size: 0.875rem;
+  }
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .pagination-controls {
+    gap: 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+.pagination-button {
+  padding: 0.375rem;
+  border-radius: 9999px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+@media (min-width: 640px) {
+  .pagination-button {
+    padding: 0.5rem;
+  }
+}
+
+.add-task-button {
+  background-color: var(--gray-50);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 2px dashed var(--gray-300);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  min-height: 3.5rem;
+}
+
+@media (min-width: 640px) {
+  .add-task-button {
+    padding: 1rem;
+    border-radius: 0.75rem;
+    min-height: 4rem;
+  }
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0.5rem;
+  z-index: 50;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@media (min-width: 640px) {
+  .modal-overlay {
+    padding: 1rem;
+  }
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  width: 100%;
+  max-width: 28rem;
+  margin: 1rem auto;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+@media (min-width: 640px) {
+  .modal-content {
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin: 2rem auto;
+    max-height: calc(100vh - 4rem);
+  }
+}
+.progress-container {
+  margin-bottom: 0.5rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 0.5rem;
+  background-color: var(--gray-200);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--primary-blue);
+  border-radius: 9999px;
+  transition: width 0.3s;
+}
+/* Add these new styles to your existing TaskManagementDashboard.css file */
+
+.add-task-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.add-task-modal {
+  padding: 2rem;
+  border-radius: 12px;
+  min-width: 300px;
+  position: relative;
+  color: white;
+}
+
+.add-task-modal h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: white;
+}
+
+.add-task-modal .close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 4px;
+}
+
+.add-task-modal .close-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}

@@ -1,0 +1,75 @@
+/* TaskList.css */
+.task-list-container {
+  width: 100%;
+  padding: 0.5rem;
+}
+
+.task-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.65rem;
+}
+
+.table-header {
+  background-color: #f3f4f6;
+  text-align: left;
+  font-weight: 500;
+  padding: 0.25rem;
+}
+
+.task-row {
+  border-bottom: 1px solid #e5e7eb;
+  transition: background-color 0.2s ease;
+}
+
+.task-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.25rem;
+  font-weight: 500;
+}
+
+.task-cell {
+  padding: 0.25rem;
+  text-align: center;
+}
+
+.progress-container {
+  width: 100%;
+  background-color: rgba(229, 231, 235, 0.5);
+  border-radius: 9999px;
+  height: 0.35rem;
+}
+
+.progress-bar {
+  height: 0.35rem;
+  border-radius: 9999px;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  font-size: 0.65rem;
+}
+
+.page-button {
+  font-size: 0.65rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 0.25rem;
+  border: none;
+  cursor: pointer;
+}
+
+.page-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 0.65rem;
+}

@@ -1,0 +1,109 @@
+/* MatrixList.css */
+
+.matrix-container {
+  max-width: 800px;
+  width: 100%;
+  margin: 50px auto;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+}
+
+.create-matrix-button {
+  width: 100%;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #3b82f6;
+  color: white;
+  font-weight: 500;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.create-matrix-button:hover {
+  background-color: #2563eb;
+}
+
+.matrix-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.matrix-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+
+.matrix-item:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.matrix-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+}
+
+.matrix-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.matrix-item-date {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.matrix-item-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 4px 0 0 0;
+}
+
+.matrix-item-icon {
+  margin-left: 16px;
+  transition: transform 0.3s ease;
+}
+
+.matrix-item-icon.rotated {
+  transform: rotate(90deg);
+}
+
+.matrix-item-icon svg {
+  color: #9ca3af;
+}
+
+.matrix-item-details {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background-color: #f9fafb;
+}
+
+.matrix-item-details.expanded {
+  max-height: 160px; /* Adjust as needed */
+  opacity: 1;
+  padding: 12px 16px;
+}
+
+.matrix-item-details p {
+  color: #4b5563;
+  margin: 0;
+}

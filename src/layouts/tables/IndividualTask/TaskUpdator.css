@@ -1,0 +1,257 @@
+/* TaskUpdator.css */
+:root {
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-400: #9ca3af;
+  --color-gray-600: #4b5563;
+  --color-gray-800: #1f2937;
+  --color-blue-100: #dbeafe;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-green-100: #d1fae5;
+  --color-green-600: #059669;
+}
+
+.container {
+  min-height: 100vh;
+  background-color: var(--color-gray-50);
+  padding: 1.5rem;
+}
+
+.main-content {
+  max-width: 56rem;
+  margin: 0 auto;
+  background-color: white;
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--color-gray-800);
+  margin-bottom: 1rem;
+}
+
+.stats-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.stat-card {
+  background-color: var(--color-gray-50);
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.stat-header {
+  display: flex;
+  align-items: center;
+  color: var(--color-gray-600);
+  margin-bottom: 0.25rem;
+}
+
+.stat-icon {
+  margin-right: 0.5rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.progress-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .progress-section {
+    flex-direction: row;
+  }
+}
+
+.progress-circle {
+  width: 12rem;
+  height: 12rem;
+}
+
+/* Customizing the scrollbar */
+.units-grid {
+  flex: 1;
+  display: grid;
+  max-height: 300px;
+  overflow-y: scroll;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding: 1rem 0;
+}
+
+/* Custom styles for the scrollbar */
+.units-grid::-webkit-scrollbar {
+  width: 8px; /* Set the width of the vertical scrollbar */
+  height: 8px; /* Set the height of the horizontal scrollbar */
+}
+
+.units-grid::-webkit-scrollbar-track {
+  background-color: #f1f1f1; /* Light background for the scrollbar track */
+  border-radius: 10px; /* Rounded corners for the track */
+}
+
+.units-grid::-webkit-scrollbar-thumb {
+  background-color: #888; /* Default color of the scrollbar thumb */
+  border-radius: 10px; /* Rounded corners for the thumb */
+  border: 2px solid #f1f1f1; /* Border around the thumb */
+}
+
+.units-grid::-webkit-scrollbar-thumb:hover {
+  background-color: #555; /* Darker color when hovering over the thumb */
+}
+
+.units-grid::-webkit-scrollbar-button {
+  display: none; /* Hide the up and down buttons for a cleaner look */
+}
+
+@media (min-width: 768px) {
+  .units-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .units-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* Center the current unit button within the scroll container */
+.units-grid .unit-button {
+  scroll-snap-align: center; /* Align the unit button at the center of the scroll container */
+}
+
+/* Style for the unit buttons */
+.unit-button {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  font-weight: 600;
+  transition: all 0.3s;
+  border: none;
+}
+
+/* Ensure current unit is centered */
+.unit-button.current {
+  background-color: var(--color-blue-100);
+  color: var(--color-blue-600);
+  cursor: pointer;
+}
+
+/* Add styles for completed and inactive states */
+.unit-button.completed {
+  background-color: var(--color-green-100);
+  color: var(--color-green-600);
+  cursor: not-allowed;
+}
+
+.unit-button.inactive {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-400);
+  cursor: not-allowed;
+}
+
+.completion-message {
+  text-align: center;
+  color: var(--color-green-600);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.action-container {
+  display: flex;
+  justify-content: center;
+}
+
+.action-button {
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  color: rgb(255, 255, 255);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.action-button.active {
+  background-color: var(--color-blue-500);
+}
+
+.action-button.active:hover {
+  background-color: var(--color-blue-600);
+}
+
+.action-button.disabled {
+  background-color: var(--color-gray-400);
+  cursor: not-allowed;
+}
+
+/* Add these styles for the close button */
+.close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.close-button:hover {
+  transform: scale(1.1);
+}
+
+.close-icon {
+  font-size: 1.5rem;
+  color: #6b7280;
+}
+
+.close-button:hover .close-icon {
+  color: #374151;
+}
+
+/* Make sure the main-content has relative positioning */
+.main-content {
+  position: relative;
+}

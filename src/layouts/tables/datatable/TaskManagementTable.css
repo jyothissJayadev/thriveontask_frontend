@@ -1,0 +1,72 @@
+/* Enable scrolling for the table */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 20px;
+  transition: transform 0.3s ease-in-out;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on mobile */
+  scrollbar-width: thin;
+}
+
+/* Add some animation to the table scroll */
+.table-container::-webkit-scrollbar {
+  height: 10px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background-color: #555;
+}
+
+/* On small screens, table cells become scrollable horizontally */
+@media (max-width: 768px) {
+  .MuiTableCell-root {
+    padding: 8px;
+    font-size: 0.85rem; /* Adjust font size for small screens */
+  }
+
+  .MuiTableHead-root {
+    font-size: 0.9rem;
+  }
+
+  .table-container {
+    margin: 0 10px;
+  }
+
+  /* Ensure smooth scrolling behavior on mobile */
+  .table-container {
+    -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on mobile */
+    scroll-behavior: smooth;
+  }
+}
+
+/* On very small screens, further adjust table cell padding and font size */
+@media (max-width: 480px) {
+  .MuiTableCell-root {
+    padding: 5px;
+    font-size: 0.75rem;
+  }
+
+  .MuiTypography-body2 {
+    font-size: 0.7rem;
+  }
+
+  .table-container {
+    margin: 0 5px;
+  }
+}
+
+@media (max-width: 320px) {
+  /* Ensure the table fits in small screens */
+  .MuiTableCell-root {
+    font-size: 0.65rem;
+  }
+
+  .MuiTypography-body2 {
+    font-size: 0.65rem;
+  }
+}
