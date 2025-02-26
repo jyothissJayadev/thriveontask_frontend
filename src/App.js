@@ -104,6 +104,29 @@ export default function App() {
       </Icon>
     </MDBox>
   );
+  useEffect(() => {
+    // Check if the page was reloaded by looking for a sessionStorage flag
+    const isReloaded = sessionStorage.getItem("isReloaded");
+
+    // If not reloaded, set a flag in sessionStorage
+    if (!isReloaded) {
+      sessionStorage.setItem("isReloaded", "true");
+    }
+
+    // Clear localStorage only when the page is closed, not on reload
+    const handleBeforeUnload = () => {
+      if (!isReloaded) {
+        localStorage.removeItem("jwtToken"); // Clear localStorage when tab is closed
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
 
   // Handle pin correct action and set JWT token
   const handlePinCorrect = () => {

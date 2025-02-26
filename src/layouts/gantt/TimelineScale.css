@@ -147,6 +147,9 @@
   left: 0;
   top: 0;
   height: 100%;
+  z-index: 1; /* Add z-index to place it above background but below text */
+  opacity: 0.6; /* Make it slightly transparent */
+  border-radius: 0.5rem 0 0 0.5rem; /* Round the left corners to match the container */
 }
 
 .resize-handle {
@@ -187,16 +190,161 @@
 .event-title {
   position: relative;
   padding: 0 0.75rem;
-  color: white;
+  color: #333; /* Darker text color for better contrast */
   font-size: 0.875rem;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  z-index: 2; /* Ensure text is on top of the progress bar */
 }
 
 .timeline-footer {
   margin-top: 1rem;
   font-size: 0.875rem;
   color: #4b5563;
+}
+/* Additional CSS for TimelineScale.css - add these to your existing file */
+.timeline-content {
+  position: relative;
+  min-height: 200px;
+}
+
+.save-button {
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.save-button:hover {
+  background-color: #2563eb;
+}
+
+/* Update these existing styles to improve container scaling */
+.timeline {
+  position: relative;
+  overflow-x: auto;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-height: 300px;
+  width: 100%;
+}
+
+.timeline-slots {
+  display: flex;
+  min-width: 100%;
+}
+
+/* Ensure time slots and events align properly */
+.time-slot {
+  flex-shrink: 0;
+  border-right: 1px solid #e5e7eb;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
+  padding: 0.5rem 0;
+  box-sizing: border-box;
+}
+/*new added css for the bottom box*/
+/* Task Detail Panel Styles */
+.task-detail-panel {
+  position: relative;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  padding: 15px 20px;
+  border-top: 1px solid #e0e0e0;
+  z-index: 100;
+}
+
+.task-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.task-detail-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+}
+
+.close-button:hover {
+  color: #333;
+}
+
+.task-detail-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: flex-end;
+}
+
+.detail-row {
+  display: flex;
+  flex-direction: column;
+  margin-right: 20px;
+}
+
+.detail-row label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+/* Time selector styles */
+.time-selector {
+  display: flex;
+  align-items: center;
+}
+
+.time-select {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 70px;
+  appearance: menulist;
+  font-size: 14px;
+}
+
+.time-selector span {
+  margin: 0 5px;
+  font-weight: bold;
+}
+
+.save-detail-button {
+  background-color: #4a7aff;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+.save-detail-button:hover {
+  background-color: #3a67e0;
+}
+
+/* Make task items clickable */
+.event-item {
+  cursor: pointer;
 }

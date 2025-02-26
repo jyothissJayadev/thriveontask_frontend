@@ -1,81 +1,12 @@
-// TaskList.jsx
 import React, { useState, useEffect } from "react";
 import "./TaskList.css";
 import { Card, Icon } from "@mui/material";
-
+import PropTypes from "prop-types";
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 
-const TaskList = () => {
-  // Sample data - replace with your actual dataset
-  const initialTasks = [
-    {
-      id: 1,
-      name: "Website redesign",
-      percentComplete: 75,
-      duration: "5 days",
-      timeLeft: "2 days",
-      color: "#e6f0ff",
-    },
-    {
-      id: 2,
-      name: "API integration",
-      percentComplete: 45,
-      duration: "10 days",
-      timeLeft: "6 days",
-      color: "#ffe6e6",
-    },
-    {
-      id: 3,
-      name: "Database migration",
-      percentComplete: 90,
-      duration: "3 days",
-      timeLeft: "1 day",
-      color: "#e6ffe6",
-    },
-    {
-      id: 4,
-      name: "User testing",
-      percentComplete: 20,
-      duration: "7 days",
-      timeLeft: "6 days",
-      color: "#fff5e6",
-    },
-    {
-      id: 5,
-      name: "Documentation",
-      percentComplete: 60,
-      duration: "4 days",
-      timeLeft: "2 days",
-      color: "#f0e6ff",
-    },
-    {
-      id: 6,
-      name: "Security audit",
-      percentComplete: 30,
-      duration: "6 days",
-      timeLeft: "4 days",
-      color: "#ffe6f7",
-    },
-    {
-      id: 7,
-      name: "Performance tuning",
-      percentComplete: 85,
-      duration: "5 days",
-      timeLeft: "1 day",
-      color: "#e6ffff",
-    },
-    {
-      id: 8,
-      name: "Bug fixes",
-      percentComplete: 50,
-      duration: "3 days",
-      timeLeft: "1.5 days",
-      color: "#efffde",
-    },
-  ];
-
+const TaskList = ({ tasks, Title }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showProgressBar, setShowProgressBar] = useState(true);
   const [windowWidth, setWindowWidth] = useState(
@@ -83,7 +14,7 @@ const TaskList = () => {
   );
 
   const tasksPerPage = 5;
-  const totalPages = Math.ceil(initialTasks.length / tasksPerPage);
+  const totalPages = Math.ceil(tasks.length / tasksPerPage);
 
   // Get progress bar color based on completion percentage
   const getProgressColor = (percentage) => {
@@ -104,7 +35,6 @@ const TaskList = () => {
   useEffect(() => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
-      // Determine if we should show progress bars based on available width
       setShowProgressBar(window.innerWidth > 380);
     };
 
@@ -129,10 +59,23 @@ const TaskList = () => {
     }
   };
 
-  // Get current tasks
+  // Sorting function based on Title
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (Title === "Lesser Time Left") {
+      const timeLeftA = new Date(a.createdAt) - new Date(a.endDate);
+      const timeLeftB = new Date(b.createdAt) - new Date(b.endDate);
+      return timeLeftA - timeLeftB; // Sort by time difference (ascending)
+    } else {
+      const unitsLeftA = a.numberOfUnits - a.completedUnits;
+      const unitsLeftB = b.numberOfUnits - b.completedUnits;
+      return unitsLeftA - unitsLeftB; // Sort by units left (ascending)
+    }
+  });
+
+  // Get current tasks for the current page
   const indexOfLastTask = currentPage * tasksPerPage;
   const indexOfFirstTask = indexOfLastTask - tasksPerPage;
-  const currentTasks = initialTasks.slice(indexOfFirstTask, indexOfLastTask);
+  const currentTasks = sortedTasks.slice(indexOfFirstTask, indexOfLastTask);
 
   return (
     <Card sx={{ height: "100%" }}>
@@ -152,7 +95,7 @@ const TaskList = () => {
           height="4.5rem"
         >
           <MDTypography variant="h5" textTransform="capitalize">
-            hello
+            {Title}
           </MDTypography>
         </MDBox>
         <div className="task-list-container">
@@ -165,37 +108,60 @@ const TaskList = () => {
                 <th className="table-header" style={{ width: "25%", textAlign: "center" }}>
                   Progress
                 </th>
-                <th className="table-header" style={{ width: "20%", textAlign: "center" }}>
-                  Duration
-                </th>
-                <th className="table-header" style={{ width: "20%", textAlign: "center" }}>
-                  Time Left
-                </th>
+
+                {/* Conditionally render table headers */}
+                {Title === "Lesser Time Left" ? (
+                  <>
+                    <th className="table-header" style={{ width: "20%", textAlign: "center" }}>
+                      Duration
+                    </th>
+                    <th className="table-header" style={{ width: "20%", textAlign: "center" }}>
+                      Time Left
+                    </th>
+                  </>
+                ) : (
+                  <>
+                    <th className="table-header" style={{ width: "20%", textAlign: "center" }}>
+                      Total Units
+                    </th>
+                    <th className="table-header" style={{ width: "20%", textAlign: "center" }}>
+                      Units Left
+                    </th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody>
+              {/* Map over the current tasks for the current page */}
               {currentTasks.map((task) => (
                 <tr key={task.id} className="task-row" style={{ backgroundColor: task.color }}>
-                  <td className="task-name">{task.name}</td>
+                  <td className="task-name">{task.taskName}</td>
                   <td className="task-cell">
-                    {showProgressBar ? (
-                      <div className="progress-container">
-                        <div
-                          className="progress-bar"
-                          style={{
-                            width: `${task.percentComplete}%`,
-                            backgroundColor: getProgressColor(task.percentComplete),
-                          }}
-                        ></div>
-                      </div>
-                    ) : (
-                      <span style={{ color: getProgressColor(task.percentComplete) }}>
-                        {task.percentComplete}%
-                      </span>
-                    )}
+                    <div className="progress-container">
+                      <div
+                        className="progress-bar"
+                        style={{
+                          width: `${(task.completedUnits / task.numberOfUnits) * 100}%`,
+                          backgroundColor: getProgressColor(task.percentComplete),
+                        }}
+                      ></div>
+                    </div>
                   </td>
-                  <td className="task-cell">{task.duration}</td>
-                  <td className="task-cell">{task.timeLeft}</td>
+
+                  {/* Conditionally render table data */}
+                  {Title === "Lesser Time Left" ? (
+                    <>
+                      <td className="task-cell">{task.duration}</td>
+                      <td className="task-cell">
+                        {new Date(task.createdAt) - new Date(task.endDate)} ms
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="task-cell">{task.numberOfUnits}</td>
+                      <td className="task-cell">{task.numberOfUnits - task.completedUnits}</td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -224,12 +190,30 @@ const TaskList = () => {
             <Icon>schedule</Icon>
           </MDTypography>
           <MDTypography variant="button" color="text" fontWeight="light">
-            15 Existing taks
+            {tasks.length} Existing tasks
           </MDTypography>
         </MDBox>
       </MDBox>
     </Card>
   );
+};
+
+TaskList.propTypes = {
+  tasks: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      taskName: PropTypes.string.isRequired,
+      percentComplete: PropTypes.number.isRequired,
+      duration: PropTypes.string.isRequired,
+      timeLeft: PropTypes.string.isRequired,
+      color: PropTypes.string.isRequired,
+      completedUnits: PropTypes.number.isRequired,
+      numberOfUnits: PropTypes.number.isRequired,
+      createdAt: PropTypes.string.isRequired,
+      endDate: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  Title: PropTypes.string.isRequired,
 };
 
 export default TaskList;

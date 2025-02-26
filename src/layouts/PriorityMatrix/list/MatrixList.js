@@ -1,80 +1,134 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { PlusCircle, ChevronRight } from "lucide-react";
 import "./MatrixList.css";
+import { getTasks } from "../../../api/api"; // Import the API function
 
 const MatrixList = () => {
   const [expandedItem, setExpandedItem] = useState(null);
-  const [items, setItems] = useState([
-    {
-      id: 1,
-      date: "18. mai 2018",
-      title: "Uudne lahendus Sinu vara kaitsmiseks",
-      details:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed eu justo nec arcu fermentum varius. Nullam in odio felis. Sed tincidunt, nisl nec aliquet ultrices, leo odio tincidunt orci.",
-    },
-    {
-      id: 2,
-      date: "19. aprill 2018",
-      title: "Meie turvatöötajate tööst Eesti Tööturukkassa Narva büroos",
-      details:
-        "Fusce tempor imperdiet nibh, et sodales enim vehicula in. Morbi lacinia sollicitudin justo, a tempus mauris lacinia sed. Duis laoreet viverra nulla, ac convallis dolor scelerisque sed.",
-    },
-    {
-      id: 3,
-      date: "7. märts 2018",
-      title: "Töö- ja karjäärimess 2018",
-      details:
-        "Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Nulla facilisi. Suspendisse potenti. Nulla eget massa eget nisl ultrices consequat.",
-    },
-    {
-      id: 4,
-      date: "28. veebruar 2018",
-      title: "Eesti Vabariik 100",
-      details:
-        "Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nulla id volutpat neque. Duis euismod, turpis ac varius lobortis, orci enim eleifend arcu.",
-    },
-  ]);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleCreateMatrix = () => {
-    const newItem = {
-      id: items.length + 1,
-      date: new Date().toLocaleDateString("et-EE", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }),
-      title: `New Matrix Item ${items.length + 1}`,
-      details:
-        "This is a newly created matrix item with placeholder details. Click to expand and see more information about this item.",
-    };
-    setItems([newItem, ...items]);
+  // Fetch tasks from API
+  const fetchTasks = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("jwtToken"); // Assuming token is stored in localStorage
+      const response = await getTasks(token);
+
+      if (response.success === false) {
+        throw new Error(response.error || "Failed to fetch tasks");
+      }
+
+      // Transform API tasks to include necessary fields
+      const transformedTasks = response.tasks.map((task) => ({
+        id: task._id || task.id,
+        name: task.taskName,
+        date: new Date(task.createdAt || task.endDate || Date.now()).toLocaleDateString("et-EE", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }),
+        title: task.name || task.title,
+        details: `Time: ${task.estimatedTime || 0} minutes | Progress: ${calculateProgress(
+          task.completedUnits,
+          task.numberOfUnits
+        )}% | Units: ${task.completedUnits || 0}/${task.numberOfUnits || 0}`,
+        priority: task.priority || 0, // Numerical priority code
+      }));
+
+      // Sort tasks by priority in descending order (highest priority first)
+      const sortedTasks = transformedTasks.sort((a, b) => b.priority - a.priority);
+
+      setTasks(sortedTasks);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Helper function to calculate progress percentage
+  const calculateProgress = (completed, total) => {
+    if (!total) return 0;
+    return Math.round((completed / total) * 100);
+  };
+
+  // Initialize by fetching tasks
+  useEffect(() => {
+    fetchTasks();
+  }, []);
 
   const toggleExpand = (id) => {
     setExpandedItem(expandedItem === id ? null : id);
   };
 
+  // Format the priority for display
+  const formatPriority = (priority) => {
+    if (!priority) return "Unassigned";
+
+    const firstDigit = Math.floor(priority / 100);
+    let priorityText = "";
+
+    switch (firstDigit) {
+      case 4:
+        priorityText = "Urgent";
+        break;
+      case 3:
+        priorityText = "High";
+        break;
+      case 2:
+        priorityText = "Medium";
+        break;
+      case 1:
+        priorityText = "Low";
+        break;
+      default:
+        priorityText = "Unassigned";
+    }
+
+    return `${priorityText} (${priority})`;
+  };
+
   return (
     <div className="matrix-container">
-      <div className="matrix-list">
-        {items.map((item) => (
-          <div key={item.id} className="matrix-item">
-            <div className="matrix-item-header" onClick={() => toggleExpand(item.id)}>
-              <div className="matrix-item-content">
-                <div className="matrix-item-date">{item.date}</div>
-                <h3 className="matrix-item-title">{item.title}</h3>
-              </div>
-              <div className={`matrix-item-icon ${expandedItem === item.id ? "rotated" : ""}`}>
-                <ChevronRight />
-              </div>
-            </div>
+      <h1 className="matrix-title">Tasks by Priority</h1>
 
-            <div className={`matrix-item-details ${expandedItem === item.id ? "expanded" : ""}`}>
-              <p>{item.details}</p>
+      {loading && <div className="loading-message">Loading tasks...</div>}
+      {error && <div className="error-message">{error}</div>}
+
+      <div className="matrix-list">
+        {tasks.length === 0 && !loading ? (
+          <div className="no-tasks-message">No tasks available</div>
+        ) : (
+          tasks.map((task) => (
+            <div key={task.id} className="matrix-item">
+              <div className="matrix-item-header" onClick={() => toggleExpand(task.id)}>
+                <div className="matrix-item-content">
+                  <div className="matrix-item-date">{task.date}</div>
+                  <div className="matrix-item-priority">{task.name} </div>
+                  <h3 className="matrix-item-title">{task.title}</h3>
+                </div>
+                <div className={`matrix-item-icon ${expandedItem === task.id ? "rotated" : ""}`}>
+                  <ChevronRight />
+                  {console.log(task)}
+                </div>
+              </div>
+
+              <div className={`matrix-item-details ${expandedItem === task.id ? "expanded" : ""}`}>
+                <p>{task.details}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
+
+      <button className="refresh-button" onClick={fetchTasks} disabled={loading}>
+        <PlusCircle size={20} />
+        <span>{loading ? "Loading..." : "Refresh Tasks"}</span>
+      </button>
     </div>
   );
 };

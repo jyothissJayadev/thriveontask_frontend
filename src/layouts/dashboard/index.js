@@ -13,9 +13,38 @@ import EarningsWithChart from "./components/speed/EarningsChart";
 import SalesOverview from "./components/timeExpect/SalesOverview";
 import CustomerFulfillment from "./components/compare/CustomerFulfillment";
 import TaskList from "./components/topTask";
+import { useEffect, useState } from "react";
+import { getTasks } from "api/api";
 function Dashboard() {
-  const { sales, tasks } = reportsLineChartData;
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const token = localStorage.getItem("jwtToken");
+        const response = await getTasks(token);
+        if (response.success) {
+          setTasks(response.tasks);
+        } else {
+          setError(response.error);
+        }
+      } catch (err) {
+        setError("Error fetching tasks");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTasks();
+  }, []);
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -28,12 +57,12 @@ function Dashboard() {
           <Grid container spacing={2}>
             <Grid item xs={12} md={6} lg={6}>
               <MDBox mb={3}>
-                <TaskList />
+                <TaskList tasks={tasks} Title={"Lesser Time Left"} />
               </MDBox>
             </Grid>
             <Grid item xs={12} md={6} lg={6}>
               <MDBox mb={3}>
-                <TaskList />
+                <TaskList tasks={tasks} Title={"Not Seen for Long Time"} />
               </MDBox>
             </Grid>
           </Grid>

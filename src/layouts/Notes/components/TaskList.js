@@ -11,68 +11,86 @@ import {
   Plus,
   Save,
 } from "lucide-react";
+import { createNote, getNotes, updateNote, deleteNote } from "../../../api/api";
 import "./StickyNotesApp.css";
 
 const StickyNotesApp = () => {
-  // State for all notes
-  const [notes, setNotes] = useState([
-    {
-      id: 1,
-      title: "Social Media",
-      content: "- Plan social content\n- Build content calendar\n- Plan promotion and distribution",
-      color: "#fff9c4",
-      lastEdited: new Date("2025-02-10"),
-    },
-    {
-      id: 2,
-      title: "Content Strategy",
-      content:
-        "Would need time to get insights (goals, personas, budget, audits), but after, it would be good to focus on assembling my team (start with SEO specialist, then perhaps an email marketer?). Also need to brainstorm on tooling.",
-      color: "#e0f7fa",
-      lastEdited: new Date("2025-02-12"),
-    },
-    {
-      id: 3,
-      title: "Email A/B Tests",
-      content: "- Subject lines\n- Sender\n- CTA\n- Sending times",
-      color: "#ffebee",
-      lastEdited: new Date("2025-02-15"),
-    },
-    {
-      id: 4,
-      title: "Banner Ads",
-      content:
-        "Notes from the workshop:\n- Sizing matters\n- Choose distinctive imagery\n- The landing page must match the display ad",
-      color: "#fff3e0",
-      lastEdited: new Date("2025-02-17"),
-    },
-  ]);
-
-  // State for active note
+  // State management
+  const [notes, setNotes] = useState([]);
   const [activeNote, setActiveNote] = useState(null);
-
-  // State for modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // State for editor
   const [editorContent, setEditorContent] = useState("");
   const [editorTitle, setEditorTitle] = useState("");
   const [editorColor, setEditorColor] = useState("#fff9c4");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Reference for the editor div
   const editorRef = useRef(null);
 
-  // Function to initialize editor with content
+  // Fetch notes when component mounts
+  useEffect(() => {
+    fetchNotes();
+  }, []);
+
+  const fetchNotes = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("jwtToken");
+      const response = await getNotes(token);
+      if (response.success === false) {
+        throw new Error(response.error);
+      }
+      // Add this check and transformation
+      if (response.notes) {
+        setNotes(response.notes); // If API returns { data: [...notes] }
+      } else if (Array.isArray(response)) {
+        setNotes(response); // If API returns notes array directly
+      } else {
+        setNotes([]); // Fallback to empty array if response is invalid
+      }
+    } catch (error) {
+      setError(error.message);
+      console.error("Error fetching notes:", error);
+      setNotes([]); // Set empty array on error
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  // Initialize editor with content
   const initializeEditor = (content) => {
     if (editorRef.current) {
-      // If content has newlines, properly format them for the contentEditable div
-      const formattedContent = content.replace(/\n/g, "<br>");
+      // Convert dash lists to HTML lists
+      let formattedContent = content
+        .split("\n")
+        .map((line) => {
+          if (line.trim().startsWith("- ")) {
+            return `<li>${line.substring(2)}</li>`;
+          }
+          // Handle numbered lists
+          if (/^\d+\.\s/.test(line)) {
+            return `<li>${line.substring(line.indexOf(".") + 2)}</li>`;
+          }
+          return line;
+        })
+        .join("<br>");
+
+      // Wrap list items in ul/ol tags
+      formattedContent = formattedContent.replace(/<li>(?:(?!<\/li>).)*<\/li>/g, (match) => {
+        if (match.startsWith("<li>- ")) {
+          return `<ul>${match}</ul>`;
+        }
+        if (/^<li>\d+\./.test(match)) {
+          return `<ol>${match}</ol>`;
+        }
+        return match;
+      });
+
       editorRef.current.innerHTML = formattedContent;
       setEditorContent(formattedContent);
     }
   };
 
-  // Text formatting functions with selection check
+  // Text formatting functions
   const formatText = (command) => {
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
@@ -82,33 +100,32 @@ const StickyNotesApp = () => {
       }
     }
   };
+  const formatContentForSave = (content) => {
+    const formattedContent = content
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .join("\n");
 
+    return formattedContent;
+  };
   const handleFormatList = (type) => {
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
-      // Save the current selection
-      const range = selection.getRangeAt(0);
-      const selectedContent = range.toString();
-
-      // Only apply list if there's a selection or the cursor is positioned
-      if (selectedContent || range.collapsed) {
-        document.execCommand(
-          type === "bullet" ? "insertUnorderedList" : "insertOrderedList",
-          false,
-          null
-        );
-        if (editorRef.current) {
-          setEditorContent(editorRef.current.innerHTML);
-        }
+      document.execCommand(
+        type === "bullet" ? "insertUnorderedList" : "insertOrderedList",
+        false,
+        null
+      );
+      if (editorRef.current) {
+        setEditorContent(editorRef.current.innerHTML);
       }
     }
   };
 
-  // Remove list formatting
   const removeListFormatting = () => {
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
-      // Check if we're in a list
       let currentNode = selection.anchorNode;
       while (currentNode && currentNode !== editorRef.current) {
         if (currentNode.nodeName === "UL" || currentNode.nodeName === "OL") {
@@ -123,28 +140,21 @@ const StickyNotesApp = () => {
     }
   };
 
-  // Open note for editing
+  // Note operations
   const openNoteEditor = (note) => {
     setEditorTitle(note.title);
     setActiveNote(note);
     setEditorColor(note.color);
     setIsModalOpen(true);
-
-    // Delay initialization to ensure modal is rendered
-    setTimeout(() => {
-      initializeEditor(note.content);
-    }, 50);
+    setTimeout(() => initializeEditor(note.content), 50);
   };
 
-  // Create new note
   const createNewNote = () => {
     setEditorTitle("");
     setEditorContent("");
     setEditorColor("#fff9c4");
     setActiveNote(null);
     setIsModalOpen(true);
-
-    // Delay initialization to ensure modal is rendered
     setTimeout(() => {
       if (editorRef.current) {
         editorRef.current.innerHTML = "";
@@ -152,93 +162,113 @@ const StickyNotesApp = () => {
     }, 50);
   };
 
-  // Convert HTML to plain text while preserving line breaks
   const htmlToText = (html) => {
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = html;
 
-    // Replace <br>, <div>, <p> with newlines
+    // Replace list items with dashes and newlines
+    const listItems = tempDiv.querySelectorAll("li");
+    listItems.forEach((li) => {
+      li.textContent = `- ${li.textContent}\n`;
+    });
+
+    // Handle ordered lists
+    const orderedItems = tempDiv.querySelectorAll("ol li");
+    orderedItems.forEach((li, index) => {
+      li.textContent = `${index + 1}. ${li.textContent}\n`;
+    });
+
+    // Replace breaks and other elements with proper newlines
     const content = tempDiv.innerHTML
       .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<div>/gi, "\n")
-      .replace(/<p>/gi, "\n")
-      .replace(/<\/div>|<\/p>/gi, "");
+      .replace(/<\/li>/gi, "\n")
+      .replace(/<\/p>/gi, "\n")
+      .replace(/<\/div>/gi, "\n")
+      .replace(/<[^>]+>/g, "") // Remove remaining HTML tags
+      .replace(/\n\n+/g, "\n") // Remove extra newlines
+      .trim();
 
-    // Now extract the text content
-    tempDiv.innerHTML = content;
-    return tempDiv.textContent || tempDiv.innerText || "";
+    return content;
   };
 
-  // Save note
-  const saveNote = () => {
-    // Get content from the editor ref to ensure we have the latest
+  const saveNote = async () => {
     const currentContent = editorRef.current ? editorRef.current.innerHTML : editorContent;
-    // Convert HTML content to plain text, preserving line breaks
-    const plainText = htmlToText(currentContent);
+    const plainText = formatContentForSave(htmlToText(currentContent));
+    const token = localStorage.getItem("jwtToken");
 
-    if (activeNote) {
-      // Update existing note
-      setNotes(
-        notes.map((note) =>
-          note.id === activeNote.id
-            ? {
-                ...note,
-                title: editorTitle,
-                content: plainText,
-                color: editorColor,
-                lastEdited: new Date(),
-              }
-            : note
-        )
-      );
-    } else {
-      // Create new note
-      const newNote = {
-        id: Date.now(),
-        title: editorTitle || "Untitled Note",
-        content: plainText,
-        color: editorColor,
-        lastEdited: new Date(),
-      };
-      setNotes([...notes, newNote]);
+    try {
+      if (activeNote) {
+        // Update existing note
+        const response = await updateNote(
+          activeNote._id,
+          editorTitle,
+          plainText,
+          editorColor,
+          token
+        );
+        if (response.success === false) {
+          throw new Error(response.error);
+        }
+        setNotes(
+          notes.map((note) =>
+            note.id === activeNote.id ? { ...response, lastEdited: new Date() } : note
+          )
+        );
+      } else {
+        // Create new note
+        const response = await createNote(
+          editorTitle || "Untitled Note",
+          plainText,
+          editorColor,
+          token
+        );
+        if (response.success === false) {
+          throw new Error(response.error);
+        }
+        setNotes([...notes, { ...response, lastEdited: new Date() }]);
+      }
+      setIsModalOpen(false);
+      fetchNotes();
+    } catch (error) {
+      console.error("Error saving note:", error);
+      alert("Failed to save note. Please try again.");
     }
-    setIsModalOpen(false);
   };
 
-  // Delete note
-  const deleteNote = (id, e) => {
-    e.stopPropagation(); // Prevent event bubbling
+  const handleDeleteNote = async (_id, e) => {
+    e.stopPropagation();
     if (window.confirm("Are you sure you want to delete this note?")) {
-      setNotes(notes.filter((note) => note.id !== id));
+      try {
+        const token = localStorage.getItem("jwtToken");
+        const response = await deleteNote(_id, token);
+        if (response.success === false) {
+          throw new Error(response.error);
+        }
+        setNotes(notes.filter((note) => note._id !== _id));
+      } catch (error) {
+        console.error("Error deleting note:", error);
+        alert("Failed to delete note. Please try again.");
+      }
     }
   };
 
-  // View note (read-only)
+  // View mode handlers
   const viewNote = (note, e) => {
-    e.stopPropagation(); // Prevent event bubbling
+    e.stopPropagation();
     setActiveNote(note);
     setEditorTitle(note.title);
     setEditorColor(note.color);
     setIsModalOpen(true);
 
-    // Delay initialization to ensure modal is rendered
     setTimeout(() => {
       initializeEditor(note.content);
-
-      // Make the editor read-only
       if (editorRef.current) {
         editorRef.current.setAttribute("contenteditable", "false");
-        // Add a visual indicator for read-only mode
         editorRef.current.classList.add("read-only-mode");
       }
-
-      // Hide formatting toolbar in view mode
       const toolbar = document.querySelector(".formatting-toolbar");
-      if (toolbar) {
-        toolbar.style.display = "none";
-      }
+      if (toolbar) toolbar.style.display = "none";
 
-      // Change the save button to a close button
       const saveBtn = document.querySelector(".save-btn");
       if (saveBtn) {
         saveBtn.innerText = "Close";
@@ -247,17 +277,26 @@ const StickyNotesApp = () => {
     }, 50);
   };
 
-  // Format display content (fixed to properly handle plain text)
+  // UI helper functions
   const formatDisplayContent = (content) => {
-    // Preview logic - truncate and format for display
+    // Add null check and provide default empty string
+    const safeContent = content || "";
     const MAX_LENGTH = 100;
-    let preview = content;
+    let preview = safeContent;
 
-    if (content.length > MAX_LENGTH) {
-      preview = content.substring(0, MAX_LENGTH) + "...";
+    if (safeContent.length > MAX_LENGTH) {
+      preview = safeContent.substring(0, MAX_LENGTH) + "...";
     }
 
     return preview.split("\n").map((line, i) => <div key={i}>{line}</div>);
+  };
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   // Color options
@@ -270,54 +309,37 @@ const StickyNotesApp = () => {
     { name: "Purple", value: "#f3e5f5" },
   ];
 
-  // Format date
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Only apply shortcuts if the modal is open
-      if (isModalOpen) {
-        // Handle keyboard shortcuts
-        if (e.ctrlKey) {
-          switch (e.key.toLowerCase()) {
-            case "b":
-              e.preventDefault();
-              formatText("bold");
-              break;
-            case "i":
-              e.preventDefault();
-              formatText("italic");
-              break;
-            case "u":
-              e.preventDefault();
-              formatText("underline");
-              break;
-            default:
-              break;
-          }
+      if (isModalOpen && e.ctrlKey) {
+        switch (e.key.toLowerCase()) {
+          case "b":
+            e.preventDefault();
+            formatText("bold");
+            break;
+          case "i":
+            e.preventDefault();
+            formatText("italic");
+            break;
+          case "u":
+            e.preventDefault();
+            formatText("underline");
+            break;
+          default:
+            break;
         }
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isModalOpen]);
 
-  // Handle editor content changes
+  // Editor content changes
   const handleEditorChange = () => {
     if (editorRef.current) {
       setEditorContent(editorRef.current.innerHTML);
-
-      // Fix for editor container overflow bug
-      // Ensure editor content stays within boundaries
       const container = editorRef.current.parentElement;
       if (container) {
         container.style.overflowY = "auto";
@@ -325,78 +347,30 @@ const StickyNotesApp = () => {
     }
   };
 
-  // Reset modal to editing mode when opened
-  useEffect(() => {
-    if (isModalOpen && editorRef.current) {
-      // Set timeout to ensure the DOM is fully rendered
-      setTimeout(() => {
-        // Check if not in view mode
-        if (!document.querySelector(".read-only-mode")) {
-          editorRef.current.setAttribute("contenteditable", "true");
-
-          // Focus at the end of the content
-          const selection = window.getSelection();
-          const range = document.createRange();
-
-          editorRef.current.focus();
-
-          if (editorRef.current.childNodes.length > 0) {
-            const lastChild = editorRef.current.childNodes[editorRef.current.childNodes.length - 1];
-            range.selectNodeContents(lastChild);
-            range.collapse(false); // Collapse to the end
-          } else {
-            range.selectNodeContents(editorRef.current);
-            range.collapse(false); // Collapse to the end
-          }
-
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-      }, 100);
-    }
-  }, [isModalOpen]);
-
-  // Close modal and clean up
+  // Modal cleanup
   const closeModal = () => {
     setIsModalOpen(false);
-
-    // Reset states
     if (editorRef.current) {
       editorRef.current.classList.remove("read-only-mode");
     }
-
-    // Show toolbar again
     const toolbar = document.querySelector(".formatting-toolbar");
     if (toolbar) {
       toolbar.style.display = "flex";
     }
   };
 
-  // Fix for editor overflow when selecting full lines
-  useEffect(() => {
-    const handleSelectionChange = () => {
-      if (editorRef.current && isModalOpen) {
-        // Ensure editor container has proper overflow settings
-        editorRef.current.style.overflowWrap = "break-word";
-        editorRef.current.style.wordBreak = "break-word";
-      }
-    };
+  if (isLoading) {
+    return <div className="loading">Loading notes...</div>;
+  }
 
-    document.addEventListener("selectionchange", handleSelectionChange);
-    return () => {
-      document.removeEventListener("selectionchange", handleSelectionChange);
-    };
-  }, [isModalOpen]);
+  if (error) {
+    return <div className="error">Error: {error}</div>;
+  }
 
   return (
     <div className="sticky-notes-app">
       <header className="app-header">
         <h1>Sticky Wall</h1>
-        <a href="https://quicknote.io/" target="_blank" rel="noopener noreferrer">
-          <button className="new-note-btn">
-            <span>Web Note</span>
-          </button>
-        </a>
         <button className="new-note-btn" onClick={createNewNote}>
           <Plus size={20} />
           <span>New Note</span>
@@ -414,7 +388,7 @@ const StickyNotesApp = () => {
             <div className="note-header">
               <h2 className="note-title">{note.title}</h2>
               <div className="note-actions">
-                <button className="icon-button" onClick={(e) => deleteNote(note.id, e)}>
+                <button className="icon-button" onClick={(e) => handleDeleteNote(note._id, e)}>
                   <Trash2 size={16} />
                 </button>
                 <button
@@ -431,7 +405,7 @@ const StickyNotesApp = () => {
                 </button>
               </div>
             </div>
-            <div className="note-content">{formatDisplayContent(note.content)}</div>
+            <div className="note-content"> {formatDisplayContent(note?.content)}</div>
             <div className="note-footer">Last edited: {formatDate(note.lastEdited)}</div>
           </div>
         ))}
@@ -495,7 +469,6 @@ const StickyNotesApp = () => {
 
             <div
               ref={editorRef}
-              id="richTextEditor"
               className="rich-text-editor"
               contentEditable
               onInput={handleEditorChange}
