@@ -6,7 +6,6 @@ import Card from "@mui/material/Card";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import MDTypography from "components/MDTypography";
-import MatrixList from "./list/MatrixList";
 import PriorityMatrix from "./matrix/PriorityMatrix";
 
 function Matrix() {
@@ -28,14 +27,11 @@ function Matrix() {
                 coloredShadow="info"
               >
                 <MDTypography variant="h6" color="white">
-                  Projects Table
+                  Priority Table
                 </MDTypography>
               </MDBox>
               <MDBox pt={3}>
                 <PriorityMatrix />
-              </MDBox>
-              <MDBox pt={3}>
-                <MatrixList />
               </MDBox>
             </Card>
           </Grid>

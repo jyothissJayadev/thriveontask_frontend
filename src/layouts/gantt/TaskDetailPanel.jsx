@@ -19,18 +19,109 @@ const TaskDetailPanel = ({
       const startMinute = parseInt(document.getElementById("start-minute").value);
       const endHour = parseInt(document.getElementById("end-hour").value);
       const endMinute = parseInt(document.getElementById("end-minute").value);
-      onSaveDay(startHour, startMinute, endHour, endMinute);
+
+      // Get the selected dates
+      const startDate = new Date(document.getElementById("start-date-input").value);
+      const endDate = new Date(document.getElementById("end-date-input").value);
+
+      // Create full datetime objects
+      const newStartDate = new Date(startDate);
+      newStartDate.setHours(startHour, startMinute);
+
+      const newEndDate = new Date(endDate);
+      newEndDate.setHours(endHour, endMinute);
+
+      // Check if start time is after end time
+      if (newStartDate > newEndDate) {
+        alert("Start time cannot be after end time");
+        return;
+      }
+
+      onSaveDay(startHour, startMinute, endHour, endMinute, newStartDate, newEndDate);
     } else if (viewMode === "week") {
       const startDay = parseInt(document.getElementById("start-day").value);
       const endDay = parseInt(document.getElementById("end-day").value);
-      onSaveWeek(startDay, endDay);
+
+      // Get the selected dates
+      const startDate = new Date(document.getElementById("start-week-input").value);
+      const endDate = new Date(document.getElementById("end-week-input").value);
+
+      // Check if start day is after end day when in same week
+      if (startDate.getTime() === endDate.getTime() && startDay > endDay) {
+        alert("Start day cannot be after end day in the same week");
+        return;
+      }
+
+      onSaveWeek(startDay, endDay, startDate, endDate);
     } else if (viewMode === "month") {
       const startDate = parseInt(document.getElementById("start-date").value);
       const endDate = parseInt(document.getElementById("end-date").value);
-      onSaveMonth(startDate, endDate);
+
+      // Get the selected month end date
+      const monthEndDate = new Date(document.getElementById("end-month-input").value);
+
+      // Create temporary dates to check if start is after end
+      const tempStartDate = new Date(monthEndDate);
+      tempStartDate.setDate(startDate);
+
+      const tempEndDate = new Date(monthEndDate);
+      tempEndDate.setDate(endDate);
+
+      // If they're in the same month and start date is after end date
+      if (tempStartDate.getMonth() === tempEndDate.getMonth() && startDate > endDate) {
+        alert("Start date cannot be after end date in the same month");
+        return;
+      }
+
+      onSaveMonth(startDate, endDate, monthEndDate);
     }
   };
+  // Add to TaskDetailPanel.jsx
 
+  // Inside the component, add these helper functions
+  const getFormattedDate = (date) => {
+    return date.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+  };
+
+  const getTodayDate = () => {
+    return getFormattedDate(new Date());
+  };
+
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return getFormattedDate(tomorrow);
+  };
+
+  const getThisWeekEnd = () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay() || 7; // Convert Sunday (0) to 7
+    const daysUntilWeekEnd = 7 - dayOfWeek;
+    const thisWeekEnd = new Date();
+    thisWeekEnd.setDate(now.getDate() + daysUntilWeekEnd);
+    return getFormattedDate(thisWeekEnd);
+  };
+
+  const getNextWeekEnd = () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay() || 7;
+    const daysUntilNextWeekEnd = 14 - dayOfWeek;
+    const nextWeekEnd = new Date();
+    nextWeekEnd.setDate(now.getDate() + daysUntilNextWeekEnd);
+    return getFormattedDate(nextWeekEnd);
+  };
+
+  const getThisMonthEnd = () => {
+    const now = new Date();
+    const thisMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return getFormattedDate(thisMonthEnd);
+  };
+
+  const getNextMonthEnd = () => {
+    const now = new Date();
+    const nextMonthEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+    return getFormattedDate(nextMonthEnd);
+  };
   return (
     <div className="task-detail-panel">
       <div className="task-detail-header">
@@ -194,7 +285,98 @@ const TaskDetailPanel = ({
             </div>
           </>
         )}
+        {/* Day View Controls - Add date selector */}
+        {viewMode === "day" && (
+          <>
+            <div className="detail-row">
+              <label>Date:</label>
+              <div className="date-selector">
+                <select
+                  id="day-date-option"
+                  className="date-select"
+                  defaultValue="today"
+                  onChange={(e) => {
+                    const endHour = document.getElementById("end-hour");
+                    if (e.target.value === "tomorrow") {
+                      document.getElementById("start-date-input").value = getTodayDate();
+                      document.getElementById("end-date-input").value = getTomorrowDate();
+                    } else {
+                      document.getElementById("start-date-input").value = getTodayDate();
+                      document.getElementById("end-date-input").value = getTodayDate();
+                    }
+                  }}
+                >
+                  <option value="today">Today</option>
+                  <option value="tomorrow">Tomorrow</option>
+                </select>
+              </div>
+            </div>
+            <div className="detail-row" style={{ display: "none" }}>
+              <input type="date" id="start-date-input" defaultValue={getTodayDate()} />
+              <input type="date" id="end-date-input" defaultValue={getTodayDate()} />
+            </div>
+          </>
+        )}
 
+        {/* Week View Controls - Add week selector */}
+        {viewMode === "week" && (
+          <>
+            <div className="detail-row">
+              <label>Week End:</label>
+              <div className="date-selector">
+                <select
+                  id="week-date-option"
+                  className="date-select"
+                  defaultValue="thisWeek"
+                  onChange={(e) => {
+                    if (e.target.value === "nextWeek") {
+                      document.getElementById("end-week-input").value = getNextWeekEnd();
+                    } else {
+                      document.getElementById("end-week-input").value = getThisWeekEnd();
+                    }
+                  }}
+                >
+                  <option value="thisWeek">This Week</option>
+                  <option value="nextWeek">Next Week</option>
+                </select>
+              </div>
+            </div>
+            <div className="detail-row" style={{ display: "none" }}>
+              <input type="date" id="start-week-input" defaultValue={getTodayDate()} />
+              <input type="date" id="end-week-input" defaultValue={getThisWeekEnd()} />
+            </div>
+          </>
+        )}
+
+        {/* Month View Controls - Add month selector */}
+        {viewMode === "month" && (
+          <>
+            <div className="detail-row">
+              <label>Month End:</label>
+              <div className="date-selector">
+                <select
+                  id="month-date-option"
+                  className="date-select"
+                  defaultValue="thisMonth"
+                  onChange={(e) => {
+                    if (e.target.value === "nextMonth") {
+                      document.getElementById("end-month-input").value = getNextMonthEnd();
+                    } else {
+                      document.getElementById("end-month-input").value = getThisMonthEnd();
+                    }
+                  }}
+                >
+                  <option value="thisMonth">This Month</option>
+                  <option value="nextMonth">Next Month</option>
+                </select>
+              </div>
+            </div>
+            <div className="detail-row" style={{ display: "none" }}>
+              <input type="date" id="start-month-input" defaultValue={getTodayDate()} />
+              <input type="date" id="end-month-input" defaultValue={getThisMonthEnd()} />
+            </div>
+          </>
+        )}
         <div className="detail-row">
           <label>Completion:</label>
           <span>{getProgressPercentage(selectedTask).toFixed(0)}%</span>

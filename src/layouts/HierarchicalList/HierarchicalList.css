@@ -449,3 +449,49 @@
 .confirmation-delete:hover {
   background-color: #dc2626;
 }
+/* Add this to your HierarchicalList.css file */
+
+.progress1-container {
+  width: 100%;
+  height: 12px;
+  background-color: #e5e7eb;
+  border-radius: 40 px;
+  margin-top: 6px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.progress1-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress1-text {
+  position: absolute;
+  right: 4px;
+  top: -2px;
+  font-size: 0.7rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Additional styles for delete button */
+.action-button.delete {
+  color: #ef4444;
+}
+
+.action-button.delete:hover {
+  background-color: #fee2e2;
+}
+.progress1-text-only {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.item-row {
+  transition: background-color 0.3s ease;
+}

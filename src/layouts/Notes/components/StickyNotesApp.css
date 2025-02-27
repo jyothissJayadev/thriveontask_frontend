@@ -412,3 +412,26 @@
   color: #666;
   font-style: italic;
 }
+/* Add this to your StickyNotesApp.css file */
+.note-preview-content {
+  word-break: break-word;
+  line-height: 1.4;
+  max-height: 120px;
+  overflow: hidden;
+}
+
+.note-preview-content b,
+.note-preview-content strong {
+  font-weight: bold;
+}
+
+.note-preview-content i,
+.note-preview-content em {
+  font-style: italic;
+}
+
+.note-preview-content ul,
+.note-preview-content ol {
+  padding-left: 20px;
+  margin: 5px 0;
+}

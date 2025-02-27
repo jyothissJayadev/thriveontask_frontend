@@ -348,3 +348,16 @@
 .event-item {
   cursor: pointer;
 }
+/* Add to TimelineScale.css */
+.date-selector {
+  margin-bottom: 10px;
+}
+
+.date-select {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 120px;
+  appearance: menulist;
+  font-size: 14px;
+}

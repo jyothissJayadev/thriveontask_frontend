@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { createNote, getNotes, updateNote, deleteNote } from "../../../api/api";
 import "./StickyNotesApp.css";
+import toast, { Toaster } from "react-hot-toast";
 
 const StickyNotesApp = () => {
   // State management
@@ -24,6 +25,7 @@ const StickyNotesApp = () => {
   const [editorColor, setEditorColor] = useState("#fff9c4");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isReadOnly, setIsReadOnly] = useState(false);
 
   const editorRef = useRef(null);
 
@@ -49,44 +51,38 @@ const StickyNotesApp = () => {
         setNotes([]); // Fallback to empty array if response is invalid
       }
     } catch (error) {
-      setError(error.message);
+      toast.error(error.message);
       console.error("Error fetching notes:", error);
       setNotes([]); // Set empty array on error
     } finally {
       setIsLoading(false);
     }
   };
+
   // Initialize editor with content
+  // Replace your initializeEditor function with this one
   const initializeEditor = (content) => {
     if (editorRef.current) {
-      // Convert dash lists to HTML lists
-      let formattedContent = content
-        .split("\n")
-        .map((line) => {
-          if (line.trim().startsWith("- ")) {
-            return `<li>${line.substring(2)}</li>`;
-          }
-          // Handle numbered lists
-          if (/^\d+\.\s/.test(line)) {
-            return `<li>${line.substring(line.indexOf(".") + 2)}</li>`;
-          }
-          return line;
-        })
-        .join("<br>");
+      // Check if content is HTML or plain text
+      if (/<[a-z][\s\S]*>/i.test(content)) {
+        // Content already has HTML formatting, use it directly
+        editorRef.current.innerHTML = content;
+      } else {
+        // Handle plain text with basic formatting
+        const lines = content.split("\n");
+        const formattedContent = lines
+          .map((line) => {
+            if (line.trim() === "") {
+              return "<br>";
+            }
+            return `<div>${line}</div>`;
+          })
+          .join("");
 
-      // Wrap list items in ul/ol tags
-      formattedContent = formattedContent.replace(/<li>(?:(?!<\/li>).)*<\/li>/g, (match) => {
-        if (match.startsWith("<li>- ")) {
-          return `<ul>${match}</ul>`;
-        }
-        if (/^<li>\d+\./.test(match)) {
-          return `<ol>${match}</ol>`;
-        }
-        return match;
-      });
+        editorRef.current.innerHTML = formattedContent;
+      }
 
-      editorRef.current.innerHTML = formattedContent;
-      setEditorContent(formattedContent);
+      setEditorContent(editorRef.current.innerHTML);
     }
   };
 
@@ -100,15 +96,7 @@ const StickyNotesApp = () => {
       }
     }
   };
-  const formatContentForSave = (content) => {
-    const formattedContent = content
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0)
-      .join("\n");
 
-    return formattedContent;
-  };
   const handleFormatList = (type) => {
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
@@ -146,6 +134,7 @@ const StickyNotesApp = () => {
     setActiveNote(note);
     setEditorColor(note.color);
     setIsModalOpen(true);
+    setIsReadOnly(false);
     setTimeout(() => initializeEditor(note.content), 50);
   };
 
@@ -155,6 +144,7 @@ const StickyNotesApp = () => {
     setEditorColor("#fff9c4");
     setActiveNote(null);
     setIsModalOpen(true);
+    setIsReadOnly(false);
     setTimeout(() => {
       if (editorRef.current) {
         editorRef.current.innerHTML = "";
@@ -162,38 +152,25 @@ const StickyNotesApp = () => {
     }, 50);
   };
 
-  const htmlToText = (html) => {
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = html;
-
-    // Replace list items with dashes and newlines
-    const listItems = tempDiv.querySelectorAll("li");
-    listItems.forEach((li) => {
-      li.textContent = `- ${li.textContent}\n`;
-    });
-
-    // Handle ordered lists
-    const orderedItems = tempDiv.querySelectorAll("ol li");
-    orderedItems.forEach((li, index) => {
-      li.textContent = `${index + 1}. ${li.textContent}\n`;
-    });
-
-    // Replace breaks and other elements with proper newlines
-    const content = tempDiv.innerHTML
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<\/li>/gi, "\n")
-      .replace(/<\/p>/gi, "\n")
-      .replace(/<\/div>/gi, "\n")
-      .replace(/<[^>]+>/g, "") // Remove remaining HTML tags
-      .replace(/\n\n+/g, "\n") // Remove extra newlines
+  // This function now preserves more of the formatting
+  const htmlToSaveFormat = (html) => {
+    // We'll preserve the HTML formatting instead of converting to plain text
+    // Clean up any unnecessary elements or formatting
+    let cleanedHtml = html
+      .replace(/&nbsp;/g, " ") // Replace non-breaking spaces
+      .replace(/<div><br><\/div>/gi, "<br>") // Normalize empty lines
+      .replace(/<div>\s*<\/div>/gi, "<br>") // Normalize empty divs
       .trim();
 
-    return content;
+    // Return the cleaned HTML
+    return cleanedHtml;
   };
-
   const saveNote = async () => {
-    const currentContent = editorRef.current ? editorRef.current.innerHTML : editorContent;
-    const plainText = formatContentForSave(htmlToText(currentContent));
+    if (!editorRef.current) return;
+
+    const currentContent = editorRef.current.innerHTML;
+    // Use the HTML content directly instead of converting to plain text
+    const contentToSave = htmlToSaveFormat(currentContent);
     const token = localStorage.getItem("jwtToken");
 
     try {
@@ -202,36 +179,51 @@ const StickyNotesApp = () => {
         const response = await updateNote(
           activeNote._id,
           editorTitle,
-          plainText,
+          contentToSave,
           editorColor,
           token
         );
         if (response.success === false) {
           throw new Error(response.error);
         }
+
+        // Update local state
         setNotes(
           notes.map((note) =>
-            note.id === activeNote.id ? { ...response, lastEdited: new Date() } : note
+            note._id === activeNote._id
+              ? {
+                  ...note,
+                  title: editorTitle,
+                  content: contentToSave,
+                  color: editorColor,
+                  lastEdited: new Date(),
+                }
+              : note
           )
         );
+
+        toast.success("Note saved successfully");
       } else {
         // Create new note
         const response = await createNote(
           editorTitle || "Untitled Note",
-          plainText,
+          contentToSave,
           editorColor,
           token
         );
         if (response.success === false) {
           throw new Error(response.error);
         }
-        setNotes([...notes, { ...response, lastEdited: new Date() }]);
+
+        toast.success("New note created successfully");
+        // Refresh notes instead of trying to update local state
+        fetchNotes();
       }
+
       setIsModalOpen(false);
-      fetchNotes();
     } catch (error) {
       console.error("Error saving note:", error);
-      alert("Failed to save note. Please try again.");
+      toast.error(error.message || "Failed to save note");
     }
   };
 
@@ -244,10 +236,11 @@ const StickyNotesApp = () => {
         if (response.success === false) {
           throw new Error(response.error);
         }
+        toast.success("Note deleted successfully");
         setNotes(notes.filter((note) => note._id !== _id));
       } catch (error) {
         console.error("Error deleting note:", error);
-        alert("Failed to delete note. Please try again.");
+        toast.error("Failed to delete note. Please try again.");
       }
     }
   };
@@ -259,20 +252,13 @@ const StickyNotesApp = () => {
     setEditorTitle(note.title);
     setEditorColor(note.color);
     setIsModalOpen(true);
+    setIsReadOnly(true);
 
     setTimeout(() => {
       initializeEditor(note.content);
       if (editorRef.current) {
         editorRef.current.setAttribute("contenteditable", "false");
         editorRef.current.classList.add("read-only-mode");
-      }
-      const toolbar = document.querySelector(".formatting-toolbar");
-      if (toolbar) toolbar.style.display = "none";
-
-      const saveBtn = document.querySelector(".save-btn");
-      if (saveBtn) {
-        saveBtn.innerText = "Close";
-        saveBtn.onclick = () => setIsModalOpen(false);
       }
     }, 50);
   };
@@ -282,13 +268,35 @@ const StickyNotesApp = () => {
     // Add null check and provide default empty string
     const safeContent = content || "";
     const MAX_LENGTH = 100;
-    let preview = safeContent;
 
-    if (safeContent.length > MAX_LENGTH) {
-      preview = safeContent.substring(0, MAX_LENGTH) + "...";
+    // Create a temporary div to handle HTML content
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = safeContent;
+
+    // Get text content for length measurement
+    let textContent = tempDiv.textContent || tempDiv.innerText;
+
+    // Trim if too long
+    let isTrimmed = false;
+    if (textContent.length > MAX_LENGTH) {
+      // We'll trim the HTML rather than the text to preserve formatting
+      const ratio = MAX_LENGTH / textContent.length;
+      const trimIndex = Math.floor(safeContent.length * ratio);
+
+      // Only use part of the HTML content
+      tempDiv.innerHTML = safeContent.substring(0, trimIndex) + "...";
+      isTrimmed = true;
     }
 
-    return preview.split("\n").map((line, i) => <div key={i}>{line}</div>);
+    // For the preview, we'll render the HTML directly with dangerouslySetInnerHTML
+    return (
+      <div
+        className="note-preview-content"
+        dangerouslySetInnerHTML={{
+          __html: isTrimmed ? tempDiv.innerHTML : safeContent,
+        }}
+      />
+    );
   };
 
   const formatDate = (date) => {
@@ -312,7 +320,7 @@ const StickyNotesApp = () => {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (isModalOpen && e.ctrlKey) {
+      if (isModalOpen && e.ctrlKey && !isReadOnly) {
         switch (e.key.toLowerCase()) {
           case "b":
             e.preventDefault();
@@ -334,7 +342,7 @@ const StickyNotesApp = () => {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isModalOpen]);
+  }, [isModalOpen, isReadOnly]);
 
   // Editor content changes
   const handleEditorChange = () => {
@@ -352,10 +360,6 @@ const StickyNotesApp = () => {
     setIsModalOpen(false);
     if (editorRef.current) {
       editorRef.current.classList.remove("read-only-mode");
-    }
-    const toolbar = document.querySelector(".formatting-toolbar");
-    if (toolbar) {
-      toolbar.style.display = "flex";
     }
   };
 
@@ -376,11 +380,10 @@ const StickyNotesApp = () => {
           <span>New Note</span>
         </button>
       </header>
-
       <div className="notes-container">
         {notes.map((note) => (
           <div
-            key={note.id}
+            key={note._id || note.id}
             className="note-card"
             style={{ backgroundColor: note.color }}
             onClick={() => openNoteEditor(note)}
@@ -405,7 +408,7 @@ const StickyNotesApp = () => {
                 </button>
               </div>
             </div>
-            <div className="note-content"> {formatDisplayContent(note?.content)}</div>
+            <div className="note-content">{formatDisplayContent(note?.content)}</div>
             <div className="note-footer">Last edited: {formatDate(note.lastEdited)}</div>
           </div>
         ))}
@@ -417,9 +420,8 @@ const StickyNotesApp = () => {
           </div>
         </div>
       </div>
-
       {isModalOpen && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay" onClick={(e) => e.stopPropagation()}>
           <div
             className="editor-modal"
             style={{ backgroundColor: editorColor }}
@@ -432,45 +434,50 @@ const StickyNotesApp = () => {
                 value={editorTitle}
                 onChange={(e) => setEditorTitle(e.target.value)}
                 placeholder="Note Title"
+                readOnly={isReadOnly}
               />
-              <div className="color-picker">
-                {colorOptions.map((color) => (
-                  <div
-                    key={color.value}
-                    className={`color-option ${editorColor === color.value ? "selected" : ""}`}
-                    style={{ backgroundColor: color.value }}
-                    onClick={() => setEditorColor(color.value)}
-                    title={color.name}
-                  />
-                ))}
-              </div>
+              {!isReadOnly && (
+                <div className="color-picker">
+                  {colorOptions.map((color) => (
+                    <div
+                      key={color.value}
+                      className={`color-option ${editorColor === color.value ? "selected" : ""}`}
+                      style={{ backgroundColor: color.value }}
+                      onClick={() => setEditorColor(color.value)}
+                      title={color.name}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="formatting-toolbar">
-              <button onClick={() => formatText("bold")} title="Bold (Ctrl+B)">
-                <Bold size={16} />
-              </button>
-              <button onClick={() => formatText("italic")} title="Italic (Ctrl+I)">
-                <Italic size={16} />
-              </button>
-              <button onClick={() => formatText("underline")} title="Underline (Ctrl+U)">
-                <Underline size={16} />
-              </button>
-              <button onClick={() => handleFormatList("bullet")} title="Bullet List">
-                <List size={16} />
-              </button>
-              <button onClick={() => handleFormatList("number")} title="Numbered List">
-                <ListOrdered size={16} />
-              </button>
-              <button onClick={removeListFormatting} title="Remove List Formatting">
-                Remove List
-              </button>
-            </div>
+            {!isReadOnly && (
+              <div className="formatting-toolbar">
+                <button onClick={() => formatText("bold")} title="Bold (Ctrl+B)">
+                  <Bold size={16} />
+                </button>
+                <button onClick={() => formatText("italic")} title="Italic (Ctrl+I)">
+                  <Italic size={16} />
+                </button>
+                <button onClick={() => formatText("underline")} title="Underline (Ctrl+U)">
+                  <Underline size={16} />
+                </button>
+                <button onClick={() => handleFormatList("bullet")} title="Bullet List">
+                  <List size={16} />
+                </button>
+                <button onClick={() => handleFormatList("number")} title="Numbered List">
+                  <ListOrdered size={16} />
+                </button>
+                <button onClick={removeListFormatting} title="Remove List Formatting">
+                  Remove List
+                </button>
+              </div>
+            )}
 
             <div
               ref={editorRef}
-              className="rich-text-editor"
-              contentEditable
+              className={`rich-text-editor ${isReadOnly ? "read-only-mode" : ""}`}
+              contentEditable={!isReadOnly}
               onInput={handleEditorChange}
               style={{
                 overflowWrap: "break-word",
@@ -481,16 +488,38 @@ const StickyNotesApp = () => {
 
             <div className="editor-footer">
               <button className="cancel-btn" onClick={closeModal}>
-                Cancel
+                {isReadOnly ? "Close" : "Cancel"}
               </button>
-              <button className="save-btn" onClick={saveNote}>
-                <Save size={16} />
-                Save Note
-              </button>
+              {!isReadOnly && (
+                <button className="save-btn" onClick={saveNote}>
+                  <Save size={16} />
+                  Save Note
+                </button>
+              )}
             </div>
           </div>
         </div>
       )}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: "#363636",
+            color: "#fff",
+          },
+          success: {
+            style: {
+              background: "#4CAF50",
+            },
+          },
+          error: {
+            style: {
+              background: "#F44336",
+            },
+          },
+        }}
+      />
     </div>
   );
 };

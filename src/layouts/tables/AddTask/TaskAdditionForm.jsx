@@ -93,7 +93,7 @@ const TaskAdditionForm = ({ onClose, timeframe }) => {
             datetime: "",
           });
           window.location.reload();
-        }, 3000); // 3000 ms = 3 seconds
+        }, 1000); // 3000 ms = 3 seconds
       } else {
         toast.error(response.error || "Error adding task.");
       }
@@ -227,7 +227,7 @@ const TaskAdditionForm = ({ onClose, timeframe }) => {
           </div>
         </form>
       </motion.div>
-      <ToastContainer position="bottom-left" autoClose={3000} />
+      <ToastContainer position="bottom-left" autoClose={2000} />
     </div>
   );
 };

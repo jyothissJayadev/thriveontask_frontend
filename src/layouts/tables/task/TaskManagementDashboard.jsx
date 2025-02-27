@@ -17,9 +17,10 @@ const TaskManagementDashboard = () => {
     month: [],
   });
 
+  // First, update your fetchTasks function to store priority in the taskObject
   const fetchTasks = async () => {
     try {
-      const data = await getTasks(token); // Assuming getTasks is your API call
+      const data = await getTasks(token);
       if (data.success) {
         const groupedTasks = {
           day: [],
@@ -36,18 +37,20 @@ const TaskManagementDashboard = () => {
             createdAt,
             endDate,
             updatedAt,
+            priority, // Make sure the API returns this field
           } = task;
           const completion = (completedUnits / numberOfUnits) * 100;
 
           const taskObject = {
             id: String(task._id),
             name: taskName,
-            completion: completedUnits,
+            completion: completion,
             remaining: calculateRemainingTime(task.endDate),
             startTime: createdAt,
             endDate: endDate,
             updatedAt: updatedAt,
             numberOfUnits: numberOfUnits,
+            priority: priority, // Store the priority in taskObject
           };
 
           if (timeframe === "day") {
@@ -58,6 +61,11 @@ const TaskManagementDashboard = () => {
             groupedTasks.month.push(taskObject);
           }
         });
+
+        // Sort tasks by priority before setting state
+        for (const timeframe in groupedTasks) {
+          groupedTasks[timeframe].sort((a, b) => b.priority - a.priority); // Higher priority first
+        }
 
         setTasks(groupedTasks);
       } else {
@@ -98,19 +106,28 @@ const TaskManagementDashboard = () => {
         name: taskData.name,
         completion: 0,
         remaining: "Not started",
+        priority: taskData.priority || 0, // Assuming priority is part of taskData now
       };
 
-      setTasks((prevState) => ({
-        ...prevState,
-        [taskData.timeframe]: [...prevState[taskData.timeframe], newTask],
-      }));
+      setTasks((prevState) => {
+        const updatedTasks = {
+          ...prevState,
+          [taskData.timeframe]: [...prevState[taskData.timeframe], newTask],
+        };
+
+        // Re-sort the tasks after adding the new one
+        updatedTasks[taskData.timeframe].sort((a, b) => b.priority - a.priority);
+
+        return updatedTasks;
+      });
 
       const response = await createTask(
         taskData.name,
-        0, // Assuming completedUnits starts at 0
-        0, // Assuming numberOfUnits starts at 0
+        0,
+        0,
         taskData.endDate,
         taskData.timeframe,
+        taskData.priority, // Make sure to pass priority to API
         token
       );
 
@@ -123,7 +140,6 @@ const TaskManagementDashboard = () => {
       console.error("Error adding task:", error);
     }
   };
-
   const AddTaskModal = ({ timeframe, onClose }) => {
     if (!timeframe) return null;
 
@@ -142,7 +158,10 @@ const TaskManagementDashboard = () => {
   };
 
   const TaskCube = ({ task, onClick }) => (
-    <div onClick={() => onClick(task)} className="task-cube">
+    <div
+      onClick={() => onClick(task)}
+      className={`task-cube ${task.priority === 0 ? "task-completed" : ""}`}
+    >
       <h3 className="task-title">{task.name}</h3>
       <div className="progress-container">
         <div className="progress-bar">
@@ -159,6 +178,7 @@ const TaskManagementDashboard = () => {
       name: PropTypes.string.isRequired,
       completion: PropTypes.string.isRequired,
       remaining: PropTypes.string.isRequired,
+      priority: PropTypes.number,
     }).isRequired,
     onClick: PropTypes.func.isRequired,
   };
@@ -170,9 +190,9 @@ const TaskManagementDashboard = () => {
 
     const visibleTasks = useMemo(() => {
       const start = page * itemsPerPage;
+      // Tasks are already sorted by priority from the fetchTasks function
       return tasks.slice(start, start + itemsPerPage);
     }, [tasks, page]);
-
     const getTimeframeFromTitle = (title) => {
       if (title === "Today") return "day";
       if (title === "This Week") return "week";
@@ -271,9 +291,114 @@ const TaskManagementDashboard = () => {
   };
 
   const handleTaskClick = useCallback((task) => {
-    setActiveModal(task);
+    // Navigate to the task updator route with the task id
+    window.location.href = `/task/${task.id}`;
   }, []);
+  const TimeframeFilter = () => {
+    const [activeTimeframe, setActiveTimeframe] = useState(null);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [showAlert, setShowAlert] = useState(false);
+    const [alertMessage, setAlertMessage] = useState("");
 
+    const handleDeleteClick = (timeframe) => {
+      setActiveTimeframe(timeframe);
+      setShowConfirm(true);
+    };
+
+    const confirmDelete = () => {
+      setShowConfirm(false);
+      setAlertMessage(
+        `${activeTimeframe.charAt(0).toUpperCase() + activeTimeframe.slice(1)} is clicked.`
+      );
+      setShowAlert(true);
+
+      // Here you would add the actual delete logic
+      console.log(`Deleting all tasks in timeframe: ${activeTimeframe}`);
+
+      // Reset active timeframe
+      setActiveTimeframe(null);
+    };
+
+    const cancelDelete = () => {
+      setShowConfirm(false);
+      setActiveTimeframe(null);
+    };
+
+    return (
+      <div className="timeframe-filter">
+        <h3>Delete by Timeframe:</h3>
+        <div className="filter-buttons">
+          {["all", "day", "week", "month"].map((timeframe) => (
+            <button
+              key={timeframe}
+              className={`filter-button ${activeTimeframe === timeframe ? "active" : ""}`}
+              onClick={() => handleDeleteClick(timeframe)}
+            >
+              {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        {/* Confirmation Dialog */}
+        {showConfirm && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h3>Confirm Delete</h3>
+              <p>Are you sure you want to delete all tasks in {activeTimeframe}?</p>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem" }}>
+                <button
+                  onClick={cancelDelete}
+                  style={{
+                    padding: "0.5rem 1rem",
+                    borderRadius: "0.375rem",
+                    border: "1px solid var(--gray-300)",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  style={{
+                    padding: "0.5rem 1rem",
+                    borderRadius: "0.375rem",
+                    backgroundColor: "#ef4444",
+                    color: "white",
+                    border: "none",
+                  }}
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Alert Message */}
+        {showAlert && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h3>Alert</h3>
+              <p>{alertMessage}</p>
+              <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
+                <button
+                  onClick={() => setShowAlert(false)}
+                  style={{
+                    padding: "0.5rem 1rem",
+                    borderRadius: "0.375rem",
+                    backgroundColor: "var(--primary-blue)",
+                    color: "white",
+                    border: "none",
+                  }}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
   return (
     <div className="dashboard-container">
       <div className="dashboard-content">
@@ -288,20 +413,14 @@ const TaskManagementDashboard = () => {
           <SectionContainer title="This Month" tasks={tasks.month} onTaskClick={handleTaskClick} />
         </div>
       </div>
-      <TaskModal
-        task={typeof activeModal === "object" ? activeModal : null}
-        onClose={() => {
-          setActiveModal(null);
-          window.location.reload();
-        }}
-      />
       <AddTaskModal
         timeframe={addTaskTimeframe}
         onClose={() => {
           setAddTaskTimeframe(null);
           setActiveModal(null);
         }}
-      />
+      />{" "}
+      <TimeframeFilter />
     </div>
   );
 };

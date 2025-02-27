@@ -88,6 +88,34 @@ export const getTasks = async (token) => {
     }
   }
 };
+export const getTaskById = async (taskId, token) => {
+  try {
+    const response = await axiosInstance.get(`/tasks/tasks/id/${taskId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    // Handle error response
+    if (error.response) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.message || error.message,
+      };
+    } else if (error.request) {
+      console.error("No response received from server", error.request);
+      return {
+        success: false,
+        error: "No response received from server.",
+      };
+    } else {
+      console.error("Error in setting up the request", error.message);
+      return {
+        success: false,
+        error: error.message || "An unexpected error occurred.",
+      };
+    }
+  }
+};
 // update completeunits
 export const updateCompletedUnits = async (taskId, completedUnits, token) => {
   try {

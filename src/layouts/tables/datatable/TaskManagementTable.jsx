@@ -111,17 +111,23 @@ const TaskManagementTable = () => {
     });
   };
 
-  const filteredData = (tasks || []).filter((task) => {
-    const searchFields = [
-      task.taskName.toLowerCase(),
-      task.numberOfUnits.toString(),
-      task.completedUnits.toString(),
-      task.timeframe.toLowerCase(),
-    ];
-    const matchesSearch = searchFields.some((field) => field.includes(searchQuery.toLowerCase()));
-    const matchesDuration = durationFilter === "all" || task.timeframe === durationFilter;
-    return matchesSearch && matchesDuration;
-  });
+  // Add priority to the filteredData sorting
+  const filteredData = (tasks || [])
+    .filter((task) => {
+      const searchFields = [
+        task.taskName.toLowerCase(),
+        task.numberOfUnits.toString(),
+        task.completedUnits.toString(),
+        task.timeframe.toLowerCase(),
+      ];
+      const matchesSearch = searchFields.some((field) => field.includes(searchQuery.toLowerCase()));
+      const matchesDuration = durationFilter === "all" || task.timeframe === durationFilter;
+      return matchesSearch && matchesDuration;
+    })
+    .sort((a, b) => {
+      // Sort by priority (higher priority first)
+      return (b.priority || 0) - (a.priority || 0);
+    });
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -204,7 +210,24 @@ const TaskManagementTable = () => {
       [field]: value,
     });
   };
+  const calculateRemainingTime = (endDate) => {
+    const currentTime = new Date();
+    const endTime = new Date(endDate);
+    const timeDifference = endTime - currentTime;
 
+    if (timeDifference < 0) {
+      return "0h";
+    }
+
+    const hoursRemaining = Math.floor(timeDifference / (1000 * 60 * 60));
+    const daysRemaining = Math.floor(hoursRemaining / 24);
+
+    if (daysRemaining > 0) {
+      return `${daysRemaining}d`;
+    } else {
+      return `${hoursRemaining}h`;
+    }
+  };
   return (
     <MDBox
       position="relative"
@@ -260,6 +283,7 @@ const TaskManagementTable = () => {
                     <TableCell>Completed</TableCell>
                     <TableCell>Timeframe</TableCell>
                     <TableCell>End Time</TableCell>
+                    <TableCell>Priority</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -273,19 +297,23 @@ const TaskManagementTable = () => {
                         <TableCell>{task.numberOfUnits}</TableCell>
                         <TableCell>
                           <Box sx={{ width: "100%" }}>
-                            <Tooltip title={`${task.completedUnits}%`} arrow>
+                            <Tooltip
+                              title={`${(task.completedUnits / task.numberOfUnits) * 100}%`}
+                              arrow
+                            >
                               <CustomLinearProgress
                                 variant="determinate"
-                                value={task.completedUnits}
+                                value={(task.completedUnits / task.numberOfUnits) * 100}
                               />
                             </Tooltip>
                             <Typography variant="body2" color="text.secondary">
-                              {task.completedUnits}%
+                              {(task.completedUnits / task.numberOfUnits) * 100}%
                             </Typography>
                           </Box>
                         </TableCell>
                         <TableCell>{task.timeframe}</TableCell>
-                        <TableCell>{task.endDate}</TableCell>
+                        <TableCell>{calculateRemainingTime(task.endDate)}</TableCell>
+                        <TableCell>{task.priority || 0}</TableCell>
                         <TableCell>
                           <IconButton
                             size="small"
@@ -389,6 +417,18 @@ const TaskManagementTable = () => {
             value={editedTask.timeframe || ""}
             onChange={(e) => handleEditChange("timeframe", e.target.value)}
           >
+            {/* Inside the Edit Dialog, add this TextField */}
+            <TextField
+              margin="dense"
+              label="Priority"
+              type="number"
+              fullWidth
+              variant="outlined"
+              value={editedTask.priority || 0}
+              onChange={(e) => handleEditChange("priority", parseInt(e.target.value, 10) || 0)}
+              inputProps={{ min: 0 }}
+              helperText="Higher numbers indicate higher priority"
+            />
             <MenuItem value="day">Day</MenuItem>
             <MenuItem value="week">Week</MenuItem>
             <MenuItem value="month">Month</MenuItem>

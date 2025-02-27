@@ -502,56 +502,77 @@ const TimelineScale = () => {
   const currentTasks = tasks[viewMode] || [];
   //newcosde
   // Add these handler functions to your TimelineScale component
-  const handleSaveTaskDayDetails = (startHour, startMinute, endHour, endMinute) => {
+  const handleSaveTaskDayDetails = (
+    startHour,
+    startMinute,
+    endHour,
+    endMinute,
+    newStartDate,
+    newEndDate
+  ) => {
     if (!selectedTask) return;
 
-    // Create new date objects based on the original dates
-    const newStartDate = new Date(selectedTask.startTime);
-    const newEndDate = new Date(selectedTask.endDate);
+    // Check if start time is after end time
+    if (newStartDate > newEndDate) {
+      toast.error("Start time cannot be after end time");
+      return;
+    }
 
-    // Update only the time portion
-    newStartDate.setHours(startHour, startMinute);
-    newEndDate.setHours(endHour, endMinute);
-
+    // Use the new date objects that include the selected dates
     updateTaskTimes(selectedTask.id, newStartDate.toISOString(), newEndDate.toISOString());
     setSelectedTask(null); // Close the panel after saving
   };
-
   // Handler for saving weekly timeframe changes
-  const handleSaveTaskWeekDetails = (startDay, endDay) => {
+  const handleSaveTaskWeekDetails = (startDay, endDay, startDate, endDate) => {
     if (!selectedTask) return;
 
     // Create new date objects based on the original dates
     const newStartDate = new Date(selectedTask.startTime);
-    const newEndDate = new Date(selectedTask.endDate);
+    const newEndDate = new Date(endDate); // Use the selected end date
 
     // Get the current day of the week (0-6, with 0 being Sunday)
     const currentStartDay = newStartDate.getDay() || 7; // Convert Sunday (0) to 7
-    const currentEndDay = newEndDate.getDay() || 7;
 
     // Calculate day difference to adjust the date
     const startDayDiff = startDay - currentStartDay;
-    const endDayDiff = endDay - currentEndDay;
 
-    // Adjust dates based on the selected days
+    // Adjust start date based on the selected day
     newStartDate.setDate(newStartDate.getDate() + startDayDiff);
-    newEndDate.setDate(newEndDate.getDate() + endDayDiff);
+
+    // Set the end day to maintain the time
+    const endTime = new Date(selectedTask.endDate);
+    newEndDate.setHours(endTime.getHours(), endTime.getMinutes());
+
+    // Check if start date is after end date
+    if (newStartDate > newEndDate) {
+      toast.error("Start date cannot be after end date");
+      return;
+    }
 
     updateTaskTimes(selectedTask.id, newStartDate.toISOString(), newEndDate.toISOString());
     setSelectedTask(null); // Close the panel after saving
   };
 
-  // Handler for saving monthly timeframe changes
-  const handleSaveTaskMonthDetails = (startDate, endDate) => {
+  // Add validation in the handleSaveTaskMonthDetails function
+  const handleSaveTaskMonthDetails = (startDate, endDate, monthEndDate) => {
     if (!selectedTask) return;
 
-    // Create new date objects based on the original dates
+    // Create new date objects
     const newStartDate = new Date(selectedTask.startTime);
-    const newEndDate = new Date(selectedTask.endDate);
+    const newEndDate = new Date(monthEndDate); // Use the selected month end date
 
-    // Set the new dates while preserving the current month and year
+    // Set the start date within the current month
     newStartDate.setDate(startDate);
-    newEndDate.setDate(endDate);
+
+    // Set the end date
+    const endTime = new Date(selectedTask.endDate);
+    newEndDate.setHours(endTime.getHours(), endTime.getMinutes());
+
+    // Check if start date is after end date
+    if (newStartDate > newEndDate) {
+      toast.error("Start date cannot be after end date");
+      return;
+    }
 
     updateTaskTimes(selectedTask.id, newStartDate.toISOString(), newEndDate.toISOString());
     setSelectedTask(null); // Close the panel after saving

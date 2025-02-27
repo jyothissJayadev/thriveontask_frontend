@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { GripVertical, MoreVertical, Plus, PlusCircle } from "lucide-react";
+import {
+  GripVertical,
+  MoreVertical,
+  Plus,
+  PlusCircle,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import toast, { Toaster } from "react-hot-toast"; // Add this import
 import "./PriorityMatrix.css";
 import { getTasks, updateTaskPriority } from "../../../api/api"; // Import the API functions
 
@@ -11,8 +19,15 @@ const PriorityMatrix = () => {
     low: { title: "Low", color: "#16a34a", bgColor: "#f0fdf4", value: 4 },
   };
 
-  // State for tasks
-  const [tasks, setTasks] = useState([]);
+  // State for tasks separated by timeframe
+  const [tasks, setTasks] = useState({
+    day: [],
+    week: [],
+    month: [],
+  });
+
+  // Active timeframe selection
+  const [activeTimeframe, setActiveTimeframe] = useState("day");
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [newTask, setNewTask] = useState({
     id: "",
@@ -24,72 +39,90 @@ const PriorityMatrix = () => {
     numberOfUnits: 0, // Total units for the task
     completedUnits: 0, // Completed units
     priorityCode: "", // ABC priority code
+    timeframe: "day", // Default timeframe
   });
   const [draggedTask, setDraggedTask] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch tasks from API
-  // Fetch tasks from API and map them to the correct matrix container
+  // Fetch tasks from API and organize by timeframe
   const fetchTasks = async () => {
     setLoading(true);
     setError(null);
     try {
       const token = localStorage.getItem("jwtToken"); // Assuming token is stored in localStorage
       const response = await getTasks(token);
-      console.log(response);
+
       if (response.success === false) {
         throw new Error(response.error || "Failed to fetch tasks");
       }
 
-      // Transform API tasks to include necessary fields
-      const transformedTasks = response.tasks.map((task) => {
-        // Extract the priority from the priorityCode (first digit of the number)
-        let matrixPriority = null;
-        if (task.priority !== undefined) {
-          // If priority is stored as a number, extract the first digit
-          const priorityFirstDigit = Math.floor(parseInt(task.priority) / 100);
+      // Group tasks by timeframe
+      const groupedTasks = {
+        day: [],
+        week: [],
+        month: [],
+      };
 
-          // Map the first digit back to matrix container
-          switch (priorityFirstDigit) {
-            case 4:
-              matrixPriority = "urgent";
-              break;
-            case 3:
-              matrixPriority = "high";
-              break;
-            case 2:
-              matrixPriority = "medium";
-              break;
-            case 1:
-              matrixPriority = "low";
-              break;
-            default:
-              matrixPriority = null; // Unassigned (0) or invalid
-          }
-        }
-
-        return {
+      response.tasks.forEach((task) => {
+        // Transform API tasks to include necessary fields
+        const transformedTask = {
           id: task._id || task.id,
-          name: task.name || task.title,
+          name: task.name || task.title || task.taskName,
           time: task.estimatedTime || 0,
           progress: calculateProgress(task.completedUnits, task.numberOfUnits),
-          priority: matrixPriority, // Set the priority based on the priorityCode
+          priority: getPriorityFromCode(task.priority), // Convert priority code to matrix container
           endDate: task.endDate || null,
           numberOfUnits: task.numberOfUnits || 0,
           completedUnits: task.completedUnits || 0,
-          priorityCode: task.priority || 0, // Store the numerical priority code
+          priorityCode: task.priority || 1, // Store the numerical priority code
+          timeframe: task.timeframe || "day", // Default to day if not specified
         };
+
+        // Add task to appropriate timeframe group
+        if (task.timeframe === "day") {
+          groupedTasks.day.push(transformedTask);
+        } else if (task.timeframe === "week") {
+          groupedTasks.week.push(transformedTask);
+        } else if (task.timeframe === "month") {
+          groupedTasks.month.push(transformedTask);
+        } else {
+          // Default to day if timeframe is not specified
+          groupedTasks.day.push(transformedTask);
+        }
       });
 
-      setTasks(transformedTasks);
+      setTasks(groupedTasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
       setError(error.message);
+      toast.error(`Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
+
+  // Helper function to convert priority code to matrix container label
+  const getPriorityFromCode = (priorityCode) => {
+    if (!priorityCode) return null;
+
+    // Extract the first digit of the priority code
+    const priorityFirstDigit = Math.floor(parseInt(priorityCode) / 100);
+
+    switch (priorityFirstDigit) {
+      case 5:
+        return "urgent";
+      case 4:
+        return "high";
+      case 3:
+        return "medium";
+      case 2:
+        return "low";
+      default:
+        return null; // Unassigned or invalid
+    }
+  };
+
   // Helper function to calculate progress percentage
   const calculateProgress = (completed, total) => {
     if (!total) return 0;
@@ -101,65 +134,19 @@ const PriorityMatrix = () => {
     fetchTasks();
   }, []);
 
+  // Function to cycle through timeframes
+  const handleTimeframeChange = (direction) => {
+    const timeframes = ["day", "week", "month"];
+    const currentIndex = timeframes.indexOf(activeTimeframe);
+
+    if (direction === "next") {
+      setActiveTimeframe(timeframes[(currentIndex + 1) % timeframes.length]);
+    } else {
+      setActiveTimeframe(timeframes[(currentIndex - 1 + timeframes.length) % timeframes.length]);
+    }
+  };
+
   // Task handlers
-  const handleAddTask = () => {
-    setNewTask({
-      id: `task-${Date.now()}`,
-      name: "",
-      time: "",
-      progress: 0,
-      priority: null,
-      endDate: null,
-      numberOfUnits: 0,
-      completedUnits: 0,
-      priorityCode: "",
-    });
-    setShowTaskForm(true);
-  };
-
-  const handleTaskChange = (e) => {
-    const { name, value } = e.target;
-    setNewTask({
-      ...newTask,
-      [name]:
-        name === "progress" ||
-        name === "time" ||
-        name === "numberOfUnits" ||
-        name === "completedUnits"
-          ? parseInt(value, 10) || 0
-          : value,
-    });
-  };
-
-  const handleTaskSubmit = (e) => {
-    e.preventDefault();
-    const progress = calculateProgress(newTask.completedUnits, newTask.numberOfUnits);
-
-    setTasks([
-      ...tasks,
-      {
-        ...newTask,
-        progress,
-      },
-    ]);
-
-    setShowTaskForm(false);
-    setNewTask({
-      id: "",
-      name: "",
-      time: "",
-      progress: 0,
-      priority: null,
-      endDate: null,
-      numberOfUnits: 0,
-      completedUnits: 0,
-      priorityCode: "",
-    });
-  };
-
-  const handleCancelTask = () => {
-    setShowTaskForm(false);
-  };
 
   // Drag and drop handlers
   const handleDragStart = (taskId) => {
@@ -172,48 +159,57 @@ const PriorityMatrix = () => {
 
   const handleDrop = (priority) => {
     if (draggedTask) {
-      const updatedTasks = tasks.map((task) => {
+      const updatedTasks = { ...tasks };
+      const originalPriority = updatedTasks[activeTimeframe].find(
+        (task) => task.id === draggedTask
+      )?.priority;
+
+      updatedTasks[activeTimeframe] = updatedTasks[activeTimeframe].map((task) => {
         if (task.id === draggedTask) {
           return { ...task, priority };
         }
         return task;
       });
+
       setTasks(updatedTasks);
       setDraggedTask(null);
+
+      const taskName = updatedTasks[activeTimeframe].find((task) => task.id === draggedTask)?.name;
+      const priorityName = priority ? priorities[priority].title : "Unassigned";
     }
   };
 
   // Calculate priority code (ABC format) for each task
-  // Calculate priority code (ABC format) for each task
-  // Calculate priority code (ABC format) for each task
   const calculatePriorityCode = () => {
+    const currentTasks = tasks[activeTimeframe];
+
     // Step 1: Assign matrix priority (A)
-    const tasksWithMatrixPriority = tasks.map((task) => {
-      // Map priority to 4-0 values (4=urgent, 3=high, 2=medium, 1=low, 0=unassigned)
-      let matrixValue = 0; // Default for unassigned
+    const tasksWithMatrixPriority = currentTasks.map((task) => {
+      // Map priority to 5-1 values (5=urgent, 4=high, 3=medium, 2=low, 1=unassigned)
+      let matrixValue = 1; // Default for unassigned
       if (task.priority) {
         switch (task.priority) {
           case "urgent":
-            matrixValue = 4;
+            matrixValue = 5;
             break;
           case "high":
-            matrixValue = 3;
+            matrixValue = 4;
             break;
           case "medium":
-            matrixValue = 2;
+            matrixValue = 3;
             break;
           case "low":
-            matrixValue = 1;
+            matrixValue = 2;
             break;
           default:
-            matrixValue = 0;
+            matrixValue = 1;
         }
       }
       return { ...task, matrixValue };
     });
 
+    // Rest of the function remains the same
     // Step 2: Sort by remaining time (for B value)
-    // First, sort tasks by time (or endDate if available)
     const sortedByTime = [...tasksWithMatrixPriority].sort((a, b) => {
       // If endDate is available, sort by it
       if (a.endDate && b.endDate) {
@@ -277,16 +273,13 @@ const PriorityMatrix = () => {
         priorityCode: priorityCode, // Store as a number, not a string
       };
     });
-  };
-
-  // Handle "Create Matrix" button click
-  // Handle "Create Matrix" button click
+  }; // Handle "Create Matrix" button click
   const handleCreateMatrix = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Calculate priority codes
+      // Calculate priority codes for the current timeframe
       const tasksWithPriority = calculatePriorityCode();
 
       // Map numerical priority code to matrix containers before updating state
@@ -296,20 +289,20 @@ const PriorityMatrix = () => {
         // Map the first digit to matrix container
         let matrixPriority = null;
         switch (priorityFirstDigit) {
-          case 4:
+          case 5:
             matrixPriority = "urgent";
             break;
-          case 3:
+          case 4:
             matrixPriority = "high";
             break;
-          case 2:
+          case 3:
             matrixPriority = "medium";
             break;
-          case 1:
+          case 2:
             matrixPriority = "low";
             break;
           default:
-            matrixPriority = null; // Unassigned (0) or invalid
+            matrixPriority = null; // Unassigned (1) or invalid
         }
 
         return {
@@ -318,8 +311,11 @@ const PriorityMatrix = () => {
         };
       });
 
-      // Update tasks state locally first with correct matrix container assignments
-      setTasks(tasksWithMatrixContainer);
+      // Update tasks state for the current timeframe
+      setTasks((prevTasks) => ({
+        ...prevTasks,
+        [activeTimeframe]: tasksWithMatrixContainer,
+      }));
 
       // Get token for API calls
       const token = localStorage.getItem("jwtToken");
@@ -338,23 +334,29 @@ const PriorityMatrix = () => {
         throw new Error(`Failed to update ${errors.length} tasks: ${errors[0].error}`);
       }
 
-      // Success notification or action
+      // Success notification
+      toast.success(
+        `${
+          activeTimeframe.charAt(0).toUpperCase() + activeTimeframe.slice(1)
+        } Matrix created successfully`
+      );
       console.log("All task priorities updated successfully");
     } catch (error) {
       console.error("Error updating priorities:", error);
       setError(error.message);
+      toast.error(`Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter tasks by priority
+  // Filter tasks by priority for the current timeframe
   const getTasksByPriority = (priority) => {
-    return tasks.filter((task) => task.priority === priority);
+    return tasks[activeTimeframe].filter((task) => task.priority === priority);
   };
 
   const getUnassignedTasks = () => {
-    return tasks.filter((task) => task.priority === null);
+    return tasks[activeTimeframe].filter((task) => task.priority === null);
   };
 
   // Render a task card
@@ -388,79 +390,69 @@ const PriorityMatrix = () => {
 
   return (
     <div className="priority-matrix-container">
+      {/* Add the Toaster component */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: "#363636",
+            color: "#fff",
+          },
+          success: {
+            style: {
+              background: "#4CAF50",
+            },
+          },
+          error: {
+            style: {
+              background: "#F44336",
+            },
+          },
+        }}
+      />
       <h1 className="title">Priority Matrix</h1>
+      {/* Timeframe Selector */}
+      <div className="timeframe-selector">
+        <button className="timeframe-arrow" onClick={() => handleTimeframeChange("prev")}>
+          <ChevronLeft size={20} />
+        </button>
+
+        <div className="timeframe-display">
+          <span className={`timeframe-option ${activeTimeframe === "day" ? "active" : ""}`}>
+            Day
+          </span>
+          <span className={`timeframe-option ${activeTimeframe === "week" ? "active" : ""}`}>
+            Week
+          </span>
+          <span className={`timeframe-option ${activeTimeframe === "month" ? "active" : ""}`}>
+            Month
+          </span>
+        </div>
+
+        <button className="timeframe-arrow" onClick={() => handleTimeframeChange("next")}>
+          <ChevronRight size={20} />
+        </button>
+      </div>
       {/* Error message */}
       {error && <div className="error-message">{error}</div>}
       {/* Task Container Section */}
       <div className="task-container" onDragOver={handleDragOver} onDrop={() => handleDrop(null)}>
         <div className="task-container-header">
           <h2 className="task-container-title">
-            Available Tasks{" "}
+            Available Tasks ({activeTimeframe}){" "}
             <span className="task-count">({getUnassignedTasks().length} tasks)</span>
           </h2>
-          <button className="add-task-btn" onClick={handleAddTask}>
-            <Plus size={16} />
-          </button>
         </div>
 
         {/* Task Form */}
-        {showTaskForm && (
-          <form className="task-form" onSubmit={handleTaskSubmit}>
-            <input
-              type="text"
-              name="name"
-              value={newTask.name}
-              onChange={handleTaskChange}
-              placeholder="Task name"
-              required
-            />
-            <input
-              type="number"
-              name="time"
-              value={newTask.time}
-              onChange={handleTaskChange}
-              placeholder="Time (minutes)"
-              min="1"
-              required
-            />
-            <input
-              type="date"
-              name="endDate"
-              value={newTask.endDate || ""}
-              onChange={handleTaskChange}
-              placeholder="End Date"
-            />
-            <input
-              type="number"
-              name="numberOfUnits"
-              value={newTask.numberOfUnits}
-              onChange={handleTaskChange}
-              placeholder="Total Units"
-              min="0"
-              required
-            />
-            <input
-              type="number"
-              name="completedUnits"
-              value={newTask.completedUnits}
-              onChange={handleTaskChange}
-              placeholder="Completed Units"
-              min="0"
-              max={newTask.numberOfUnits}
-              required
-            />
-            <div className="form-actions">
-              <button type="submit">Save</button>
-              <button type="button" onClick={handleCancelTask}>
-                Cancel
-              </button>
-            </div>
-          </form>
-        )}
 
         {/* Task List (Unassigned Tasks) */}
         <div className="tasks-wrapper">
           {loading && <div className="loading">Loading tasks...</div>}
+          {!loading && getUnassignedTasks().length === 0 && (
+            <div className="no-tasks">0 tasks in {activeTimeframe} </div>
+          )}
           {!loading && getUnassignedTasks().map(renderTaskCard)}
         </div>
       </div>
@@ -478,15 +470,27 @@ const PriorityMatrix = () => {
               <span className="task-count">({getTasksByPriority(priority).length} tasks)</span>
             </h2>
 
-            <div className="task-list">{getTasksByPriority(priority).map(renderTaskCard)}</div>
+            <div className="task-list">
+              {getTasksByPriority(priority).length === 0 ? (
+                <div className="no-tasks">
+                  0 {priorities[priority].title.toLowerCase()} tasks for {activeTimeframe}
+                </div>
+              ) : (
+                getTasksByPriority(priority).map(renderTaskCard)
+              )}
+            </div>
           </div>
         ))}
-      </div>{" "}
-      <br></br>
+      </div>
+      <br /> <br />
       <button className="create-matrix-button" onClick={handleCreateMatrix} disabled={loading}>
         <PlusCircle size={20} />
-        <span>{loading ? "Processing..." : "Create Matrix"}</span>
-      </button>
+        <span>
+          {loading
+            ? "Processing..."
+            : `Create ${activeTimeframe.charAt(0).toUpperCase() + activeTimeframe.slice(1)} Matrix`}
+        </span>
+      </button>{" "}
     </div>
   );
 };

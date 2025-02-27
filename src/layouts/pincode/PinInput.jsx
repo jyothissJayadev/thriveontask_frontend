@@ -54,6 +54,7 @@ const PinInput = () => {
       // Store JWT token and simulate redirect or further actions
       localStorage.setItem("jwtToken", result.token); // Store token
       localStorage.setItem("username", result.user.name);
+      localStorage.setItem("jwtTokenTimestamp", new Date().getTime().toString());
       // Store the user's name in the parent state
       setUserName(result.user.name); // Update the state with user's name
 

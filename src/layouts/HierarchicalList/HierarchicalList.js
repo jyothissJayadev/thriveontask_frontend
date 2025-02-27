@@ -22,7 +22,8 @@ const HierarchicalList = () => {
   const [unitSelection, setUnitSelection] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const [showRemoveChildConfirmation, setShowRemoveChildConfirmation] = useState(false);
+  const [itemToRemove, setItemToRemove] = useState(null);
   // New states for menu and confirmation dialog
   const [openMenuId, setOpenMenuId] = useState(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -382,7 +383,19 @@ const HierarchicalList = () => {
       setSelectedSearchItem(null);
     }
   };
+  const calculateChildrenProgress = (children) => {
+    if (!children || children.length === 0) return 0;
 
+    const totalUnits = children.reduce((sum, child) => sum + (child.numberOfUnits || 0), 0);
+    const completedUnits = children.reduce((sum, child) => sum + (child.completedUnits || 0), 0);
+
+    return totalUnits > 0 ? (completedUnits / totalUnits) * 100 : 0;
+  };
+  const getProgressColor = (progress) => {
+    if (progress < 30) return "#ef4444"; // Red
+    if (progress < 70) return "#f59e0b"; // Amber
+    return "#10b981"; // Green
+  };
   // Function to toggle the menu for an item
   const toggleMenu = (id, e) => {
     e.stopPropagation();
@@ -400,13 +413,128 @@ const HierarchicalList = () => {
     setShowDeleteConfirmation(true);
     setOpenMenuId(null);
   };
+  const handleDeleteParent = (item, e) => {
+    e.stopPropagation();
+    setItemToDelete(item);
+    setShowDeleteConfirmation(true);
+  };
 
+  // Function to handle deletion of child from a category
+  const handleDeleteChild = (item, e) => {
+    e.stopPropagation();
+    setItemToRemove(item);
+    setShowRemoveChildConfirmation(true);
+  };
   // Function to cancel delete
   const cancelDelete = () => {
     setShowDeleteConfirmation(false);
     setItemToDelete(null);
   };
+  const refreshCategories = async () => {
+    try {
+      const categoriesResponse = await getCategories(token);
+      if (categoriesResponse.success) {
+        const formattedCategories = categoriesResponse.categories.map((category) => ({
+          id: category._id,
+          title: category.name,
+          subtitle: category.parent_task
+            ? `Parent: ${category.parent_task.taskName}`
+            : "No parent task",
+          selected: false,
+          expanded: false,
+          duration: category.parent_task
+            ? calculateDuration(category.parent_task.createdAt, category.parent_task.endDate)
+            : "N/A",
+          timeframe: "N/A",
+          color: category.color || "#f3f4f6",
+          units: category.children ? category.children.length : 0,
+          children: category.children
+            ? category.children.map((child) => ({
+                id: child._id,
+                title: child.taskName,
+                subtitle: `Units: ${child.completedUnits}/${child.numberOfUnits}`,
+                selected: false,
+                expanded: false,
+                duration: calculateDuration(child.createdAt, child.endDate),
+                timeframe: child.timeframe || "N/A",
+                color: category.color || "#f3f4f6",
+                units: child.numberOfUnits || 0,
+                completedUnits: child.completedUnits || 0,
+                numberOfUnits: child.numberOfUnits || 0,
+                children: [],
+                taskId: child._id,
+                isTask: true,
+              }))
+            : [],
+          parentTaskId: category.parent_task ? category.parent_task._id : null,
+        }));
 
+        setItems(formattedCategories);
+      } else {
+        const errorMessage = categoriesResponse?.error || "Failed to refresh categories";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to refresh categories");
+    }
+  };
+  const confirmRemoveChild = async () => {
+    try {
+      // Find the parent category of this child
+      const findParentWithChild = (items, childId) => {
+        for (const item of items) {
+          if (item.children?.some((child) => child.id === childId)) {
+            return item;
+          }
+          if (item.children?.length > 0) {
+            const result = findParentWithChild(item.children, childId);
+            if (result) return result;
+          }
+        }
+        return null;
+      };
+
+      const parentCategory = findParentWithChild(items, itemToRemove.id);
+
+      if (parentCategory) {
+        // Filter out the child to remove
+        const updatedChildrenIds = parentCategory.children
+          .filter((child) => child.id !== itemToRemove.id)
+          .map((child) => child.taskId || child.id);
+
+        // Update the category with the new children list
+        const result = await updateCategory(
+          parentCategory.id,
+          parentCategory.title,
+          `Updated category for ${parentCategory.title}`,
+          parentCategory.parentTaskId,
+          updatedChildrenIds,
+          parentCategory.color,
+          token
+        );
+
+        if (result.success) {
+          toast.success("Task removed from category successfully");
+          // Refresh categories after successful update
+          refreshCategories();
+        } else {
+          const errorMessage = result?.error || "Failed to update category";
+          setError(errorMessage);
+          toast.error(errorMessage);
+        }
+      } else {
+        toast.error("Parent category not found");
+      }
+    } catch (err) {
+      toast.error("An error occurred while removing the task");
+      console.error(err);
+    } finally {
+      setShowRemoveChildConfirmation(false);
+      setItemToRemove(null);
+    }
+  };
   // Function to confirm delete
   const confirmDelete = async () => {
     try {
@@ -468,6 +596,15 @@ const HierarchicalList = () => {
   const renderItem = (item, depth = 0, parentColor = null) => {
     // Use the item's color or inherit from parent
     const bgColor = item.color || parentColor || "#ffffff";
+    const isParent = depth === 0;
+    const isChild = !isParent;
+
+    // Calculate progress for the progress bar
+    const progress = item.isTask
+      ? (item.completedUnits / item.numberOfUnits) * 100
+      : item.children && item.children.length > 0
+      ? calculateChildrenProgress(item.children)
+      : 0;
 
     return (
       <div key={item.id} className="item-wrapper">
@@ -476,7 +613,7 @@ const HierarchicalList = () => {
           style={{ backgroundColor: bgColor }}
         >
           {/* Numbered circle on the left (only for top-level items) */}
-          {depth === 0 && (
+          {isParent && (
             <div className="item-number">
               <div className="number-circle">{items.indexOf(item) + 1}</div>
             </div>
@@ -505,32 +642,46 @@ const HierarchicalList = () => {
               <span className="item-subtitle">{item.subtitle}</span>
               <span className="item-units">Units: {item.units}</span>
             </div>
+            {/* Progress bar */}
+            <div className="progress1-container">
+              <div
+                className="progress1-bar"
+                style={{ width: `${progress}%`, backgroundColor: getProgressColor(progress) }}
+              ></div>
+              <span className="progress1-text">{Math.round(progress)}%</span>
+            </div>
           </div>
 
           {/* Actions on the right */}
           <div className="actions-section">
-            {/* New 3-dot menu button */}
-            <div className="menu-button" onClick={(e) => toggleMenu(item.id, e)}>
-              <MoreVertical size={16} />
-
-              {/* Dropdown menu */}
-              {openMenuId === item.id && (
-                <div className="dropdown-menu">
-                  <div className="dropdown-item delete" onClick={(e) => handleDeleteClick(item, e)}>
-                    <Trash2 size={16} className="dropdown-item-icon" />
-                    <span>Delete</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={() => handleAddButtonClick(item.id)}
-              className="action-button add"
-              title="Add child item"
-            >
-              <Plus size={16} />
-            </button>
+            {/* Different actions for parent vs child */}
+            {isParent && (
+              <>
+                <button
+                  onClick={(e) => handleDeleteParent(item, e)}
+                  className="action-button delete"
+                  title="Delete category"
+                >
+                  <Trash2 size={16} />
+                </button>
+                <button
+                  onClick={() => handleAddButtonClick(item.id)}
+                  className="action-button add"
+                  title="Add child item"
+                >
+                  <Plus size={16} />
+                </button>
+              </>
+            )}
+            {isChild && (
+              <button
+                onClick={(e) => handleDeleteChild(item, e)}
+                className="action-button delete"
+                title="Remove from category"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -563,7 +714,6 @@ const HierarchicalList = () => {
               <Plus size={20} />
             </button>
           </div>
-
           {/* Search container */}
           {showSearchContainer && (
             <div className="modal-overlay">
@@ -610,7 +760,6 @@ const HierarchicalList = () => {
               </div>
             </div>
           )}
-
           {/* Color and Unit Selection Form */}
           {showColorUnitForm && selectedSearchItem && (
             <div className="modal-overlay">
@@ -669,7 +818,43 @@ const HierarchicalList = () => {
               </div>
             </div>
           )}
+          {/* Delete Confirmation Dialog */}
+          {showRemoveChildConfirmation && itemToRemove && (
+            <div className="modal-overlay">
+              <div className="modal-container confirmation-dialog">
+                <div className="modal-header">
+                  <h3 className="confirmation-title">Remove Task</h3>
+                  <button
+                    onClick={() => setShowRemoveChildConfirmation(false)}
+                    className="close-button"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
 
+                <div className="confirmation-message">
+                  Are you sure you want to remove &quot;{itemToRemove.title}&quot; from this
+                  category?
+                  <br />
+                  <small>
+                    The task itself will not be deleted, only removed from this category.
+                  </small>
+                </div>
+
+                <div className="confirmation-buttons">
+                  <button
+                    onClick={() => setShowRemoveChildConfirmation(false)}
+                    className="confirmation-cancel"
+                  >
+                    Cancel
+                  </button>
+                  <button onClick={confirmRemoveChild} className="confirmation-delete">
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}{" "}
           {/* Delete Confirmation Dialog */}
           {showDeleteConfirmation && itemToDelete && (
             <div className="modal-overlay">

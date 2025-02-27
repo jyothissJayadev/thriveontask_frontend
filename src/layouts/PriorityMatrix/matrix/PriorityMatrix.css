@@ -47,10 +47,7 @@
 
 .tasks-wrapper {
   display: grid;
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(var(--task-min-width), var(--task-max-width))
-  );
+  grid-template-columns: repeat(auto-fill, minmax(var(--task-min-width), var(--task-max-width)));
   gap: var(--grid-gap);
   padding: 4px;
 }
@@ -298,4 +295,61 @@
 .form-actions button[type="button"] {
   background: #e5e7eb;
   color: #374151;
+}
+/* Timeframe Selector Styles */
+.timeframe-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  background-color: #fff;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.timeframe-display {
+  display: flex;
+  justify-content: space-between;
+  width: 300px;
+  padding: 0 1rem;
+}
+
+.timeframe-option {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  color: #6b7280;
+  transition: all 0.2s ease;
+}
+
+.timeframe-option.active {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  font-weight: 600;
+}
+
+.timeframe-arrow {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  color: #6b7280;
+  transition: all 0.2s ease;
+}
+
+.timeframe-arrow:hover {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+
+/* Error message */
+.error-message {
+  padding: 0.75rem;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-radius: 0.25rem;
+  margin-bottom: 1rem;
 }

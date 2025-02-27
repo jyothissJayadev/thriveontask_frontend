@@ -107,13 +107,12 @@ const MatrixList = () => {
             <div key={task.id} className="matrix-item">
               <div className="matrix-item-header" onClick={() => toggleExpand(task.id)}>
                 <div className="matrix-item-content">
-                  <div className="matrix-item-date">{task.date}</div>
+                  <div className="matrix-item-date">{task.priority}</div>
                   <div className="matrix-item-priority">{task.name} </div>
                   <h3 className="matrix-item-title">{task.title}</h3>
                 </div>
                 <div className={`matrix-item-icon ${expandedItem === task.id ? "rotated" : ""}`}>
                   <ChevronRight />
-                  {console.log(task)}
                 </div>
               </div>
 

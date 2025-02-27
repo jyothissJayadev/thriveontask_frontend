@@ -16,6 +16,8 @@ import brandWhite from "assets/images/logo-ct.png";
 import brandDark from "assets/images/logo-ct-dark.png";
 import PinInput from "layouts/pincode/PinInput"; // Ensure this is the correct path
 import useSessionTimeout from "context/useSessionTimeout";
+import TaskManagementDashboard from "layouts/tables/task/TaskManagementDashboard";
+import TaskUpdator from "layouts/tables/IndividualTask/TaskUpdator";
 
 export default function App() {
   const [controller, dispatch] = useMaterialUIController();
@@ -104,37 +106,63 @@ export default function App() {
       </Icon>
     </MDBox>
   );
+  // Add this to your useEffect block or replace the existing useSessionTimeout hook implementation
   useEffect(() => {
-    // Check if the page was reloaded by looking for a sessionStorage flag
-    const isReloaded = sessionStorage.getItem("isReloaded");
+    // Function to check and clear token if it's expired
+    const checkTokenExpiration = () => {
+      const token = localStorage.getItem("jwtToken");
+      const tokenTimestamp = localStorage.getItem("jwtTokenTimestamp");
 
-    // If not reloaded, set a flag in sessionStorage
-    if (!isReloaded) {
-      sessionStorage.setItem("isReloaded", "true");
-    }
+      if (token && tokenTimestamp) {
+        const currentTime = new Date().getTime();
+        const tokenTime = parseInt(tokenTimestamp, 10);
+        const threeHoursInMs = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
 
-    // Clear localStorage only when the page is closed, not on reload
-    const handleBeforeUnload = () => {
-      if (!isReloaded) {
-        localStorage.removeItem("jwtToken"); // Clear localStorage when tab is closed
+        if (currentTime - tokenTime > threeHoursInMs) {
+          // Token has expired (been in localStorage for more than 3 hours)
+          localStorage.removeItem("jwtToken");
+          localStorage.removeItem("jwtTokenTimestamp");
+          setJwtToken(null); // Update state to trigger re-render and redirect to PinInput
+        }
       }
     };
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
+    // Check immediately
+    checkTokenExpiration();
 
-    // Cleanup
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
+    // Check periodically
+    const interval = setInterval(checkTokenExpiration, 60000); // Check every minute
+
+    // Update the timestamp on user activity
+    const updateTimestamp = () => {
+      if (localStorage.getItem("jwtToken")) {
+        localStorage.setItem("jwtTokenTimestamp", new Date().getTime().toString());
+      }
     };
-  }, []);
 
-  // Handle pin correct action and set JWT token
+    // Add event listeners for user activity
+    window.addEventListener("click", updateTimestamp);
+    window.addEventListener("keypress", updateTimestamp);
+    window.addEventListener("scroll", updateTimestamp);
+    window.addEventListener("mousemove", updateTimestamp);
+
+    // Cleanup function
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("click", updateTimestamp);
+      window.removeEventListener("keypress", updateTimestamp);
+      window.removeEventListener("scroll", updateTimestamp);
+      window.removeEventListener("mousemove", updateTimestamp);
+    };
+  }, [setJwtToken]);
+
+  // Also modify your handlePinCorrect function to set the initial timestamp:
   const handlePinCorrect = () => {
     const token = "1234"; // In a real-world scenario, generate or retrieve the token
     localStorage.setItem("jwtToken", token);
-    setJwtToken(token); // Update state to reflect the JWT token
+    localStorage.setItem("jwtTokenTimestamp", new Date().getTime().toString());
+    setJwtToken(token);
   };
-
   // If JWT token doesn't exist, redirect to the PinInput page
   if (!jwtToken) {
     return <PinInput onPinCorrect={handlePinCorrect} />;
@@ -162,7 +190,8 @@ export default function App() {
 
         <Routes>
           {getRoutes(routes)}
-          <Route path="*" element={<Navigate to="/dashboard" />} />
+          <Route path="*" element={<Navigate to="/tasks" />} />{" "}
+          <Route path="/task/:taskId" element={<TaskUpdator />} />
         </Routes>
       </ThemeProvider>
     </CacheProvider>
