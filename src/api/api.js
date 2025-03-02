@@ -10,7 +10,7 @@ export const loginUser = async (pincode) => {
     return { success: false, error: error.response?.data?.error || error.message };
   }
 };
-
+//tasks
 export const createTask = async (
   taskName,
   numberOfUnits,
@@ -59,7 +59,6 @@ export const createTask = async (
     }
   }
 };
-// Update Profile
 export const getTasks = async (token) => {
   try {
     const response = await axiosInstance.get("/tasks/tasks", {
@@ -116,7 +115,6 @@ export const getTaskById = async (taskId, token) => {
     }
   }
 };
-// update completeunits
 export const updateCompletedUnits = async (taskId, completedUnits, token) => {
   try {
     const response = await axiosInstance.put(
@@ -185,8 +183,6 @@ export const updateTaskTime = async (taskId, startTime, endTime, token) => {
     }
   }
 };
-
-//  update task
 export const updateTask = async (token, _id, editedTask) => {
   try {
     const { taskName, numberOfUnits, completedUnits, endDate, timeframe } = editedTask;
@@ -226,7 +222,6 @@ export const updateTask = async (token, _id, editedTask) => {
     }
   }
 };
-//updated THE TASK
 export const updateTaskPriority = async (token, taskId, priority) => {
   try {
     const response = await axiosInstance.put(
@@ -256,7 +251,6 @@ export const updateTaskPriority = async (token, taskId, priority) => {
     }
   }
 };
-//DELTE THE TASK
 export const deleteTask = async (token, taskId) => {
   try {
     const response = await axiosInstance.delete(
@@ -304,8 +298,6 @@ export const createNote = async (title, content, color, token) => {
     return handleError(error);
   }
 };
-
-// Get all notes for the authenticated user
 export const getNotes = async (token) => {
   try {
     const response = await axiosInstance.get("/notes/notes", {
@@ -316,8 +308,6 @@ export const getNotes = async (token) => {
     return handleError(error);
   }
 };
-
-// Update an existing note by ID
 export const updateNote = async (noteId, title, content, color, token) => {
   try {
     const response = await axiosInstance.put(
@@ -332,8 +322,6 @@ export const updateNote = async (noteId, title, content, color, token) => {
     return handleError(error);
   }
 };
-
-// Delete a note by ID
 export const deleteNote = async (noteId, token) => {
   try {
     const response = await axiosInstance.delete(`/notes/notes/${noteId}`, {
@@ -390,8 +378,6 @@ export const createCategory = async (name, description, parent_task, children, c
     return handleError(error);
   }
 };
-
-// Get all categories for the authenticated user
 export const getCategories = async (token) => {
   try {
     const response = await axiosInstance.get("/tasks/categories", {
@@ -402,33 +388,54 @@ export const getCategories = async (token) => {
     return handleError(error);
   }
 };
-
-// Update an existing category by ID
-export const updateCategory = async (
-  categoryId,
-  name,
-  description,
-  parent_task,
-  children,
-  color,
-  token
-) => {
+export const updateChildInCategory = async (categoryId, taskId, numberOfUnits, token) => {
   try {
-    console.log(categoryId);
+    // Sending a PUT request to update the child in the category
     const response = await axiosInstance.put(
-      `/tasks/categories/${categoryId}`, // Backend endpoint to update a specific category
-      { name, description, parent_task, children, color }, // Data to update
+      `/tasks/categories/${categoryId}/children/update`, // Backend endpoint
       {
-        headers: { Authorization: `Bearer ${token}` }, // Include the token for authentication
+        taskId, // Task ID of the child task to be updated
+        numberOfUnits, // The new number of units to update
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` }, // Include token in the headers
       }
     );
-    return response.data; // Return the updated category data from the backend
+
+    // Return the response data
+    return response.data;
   } catch (error) {
-    return handleError(error);
+    console.log("Error updating child in category:", error);
+    return handleError(error); // Handle the error (you can define handleError as needed)
   }
 };
+export const deleteChildTasksCategory = async (categoryId, taskId, token) => {
+  try {
+    // Prepare the data to be sent to the backend
+    const data = {
+      taskId, // The ID of the child task to be deleted
+    };
 
-// Delete a category by ID
+    // Log for debugging (optional)
+    console.log("Deleting child task:", data);
+
+    // Make the DELETE request to the backend to delete the child task from the category
+    const response = await axiosInstance.delete(
+      `/tasks/categories/${categoryId}/children/delete`, // Backend endpoint to delete the child task from the category
+      {
+        headers: { Authorization: `Bearer ${token}` }, // Include the token for authentication
+        data, // The data containing taskId
+      }
+    );
+
+    // Return the response data
+    return response.data;
+  } catch (error) {
+    // Handle errors gracefully
+    console.error("Error deleting child task:", error);
+    return handleError(error); // Ensure you have a handleError function to manage errors
+  }
+};
 export const deleteCategory = async (categoryId, token) => {
   try {
     console.log(categoryId, token);
@@ -446,3 +453,118 @@ export const deleteCategory = async (categoryId, token) => {
 };
 
 // Common error handler for API requests
+export const createSpeed = async (token) => {
+  try {
+    const response = await axiosInstance.post(
+      "/tasks/speeds", // Backend endpoint to create speed records
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` }, // Include token for authentication
+      }
+    );
+    return response.data; // Return the response data
+  } catch (error) {
+    console.error("Error creating speed records:", error);
+    return handleError(error); // Handle errors
+  }
+};
+export const getSpeedForToday = async (token) => {
+  try {
+    const response = await axiosInstance.get(
+      "/tasks/speeds/today", // Backend endpoint to get speed for today
+      {
+        headers: { Authorization: `Bearer ${token}` }, // Include token for authentication
+      }
+    );
+    return response.data; // Return the response data
+  } catch (error) {
+    console.error("Error fetching speed for today:", error);
+    return handleError(error); // Handle errors
+  }
+};
+export const getAllSpeedByUserId = async (token) => {
+  try {
+    const response = await axiosInstance.get(
+      "tasks/speeds/user", // Backend endpoint to get all speed records for the user
+      {
+        headers: { Authorization: `Bearer ${token}` }, // Include token for authentication
+      }
+    );
+    return response.data; // Return the response data
+  } catch (error) {
+    console.error("Error fetching all speed records:", error);
+    return handleError(error); // Handle errors
+  }
+};
+export const getAllSpeedWithoutUserId = async (token) => {
+  try {
+    const response = await axiosInstance.get(
+      "tasks/speeds", // Backend endpoint to get all speed records without userId
+      {
+        headers: { Authorization: `Bearer ${token}` }, // Include token for authentication
+      }
+    );
+    return response.data; // Return the response data
+  } catch (error) {
+    console.error("Error fetching all speed records for all users:", error);
+    return handleError(error); // Handle errors
+  }
+};
+export const updateSpeedTasks = async (taskId, speed, token) => {
+  try {
+    const data = {
+      taskId, // Task ID
+      speed, // Speed to update
+    };
+    console.log(speed);
+    const response = await axiosInstance.put(
+      "/tasks/speeds", // Backend endpoint to update task speed
+      data,
+      {
+        headers: { Authorization: `Bearer ${token}` }, // Include token for authentication
+      }
+    );
+    return response.data; // Return the response data
+  } catch (error) {
+    console.error("Error updating task speed:", error);
+    return handleError(error); // Handle errors
+  }
+};
+export const updateCompleteSpeed = async (addSpeed, token) => {
+  try {
+    const data = {
+      addSpeed, // Speed to add
+    };
+
+    const response = await axiosInstance.put(
+      "/speed/complete-speed/update", // Backend endpoint to update complete speed
+      data,
+      {
+        headers: { Authorization: `Bearer ${token}` }, // Include token for authentication
+      }
+    );
+    return response.data; // Return the response data
+  } catch (error) {
+    console.error("Error updating complete speed:", error);
+    return handleError(error); // Handle errors
+  }
+};
+export const updateToRemoveCompleteSpeed = async (inputSpeedRemove, token) => {
+  try {
+    const data = {
+      inputSpeedRemove, // Speed to remove
+    };
+
+    const response = await axiosInstance.put(
+      "/speed/complete-speed/remove", // Backend endpoint to remove speed from complete speed
+      data,
+      {
+        headers: { Authorization: `Bearer ${token}` }, // Include token for authentication
+      }
+    );
+    return response.data; // Return the response data
+  } catch (error) {
+    console.error("Error removing speed from complete speed:", error);
+    return handleError(error); // Handle errors
+  }
+};

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { ChevronRight, ChevronDown, Plus, Search, X, MoreVertical, Trash2 } from "lucide-react";
+import { ChevronRight, ChevronDown, Plus, Search, X, Trash2 } from "lucide-react";
 import "./HierarchicalList.css";
 import {
   getCategories,
   createCategory,
-  updateCategory,
   deleteCategory,
   getTasks,
+  updateChildInCategory,
+  deleteChildTasksCategory,
 } from "../../api/api";
 import toast, { Toaster } from "react-hot-toast";
 const HierarchicalList = () => {
@@ -299,25 +300,12 @@ const HierarchicalList = () => {
         const parentCategory = findParentCategory(items, addingToParentId);
 
         if (parentCategory) {
-          // Get existing children IDs
-          const existingChildrenIds = parentCategory.children.map(
-            (child) => child.taskId || child.id
-          );
-
-          // Add the new child ID
-          const updatedChildrenIds = [...existingChildrenIds, selectedSearchItem.id];
-
-          // Update the category with the new child
-          const result = await updateCategory(
-            parentCategory.id,
-            parentCategory.title,
-            `Updated category for ${parentCategory.title}`,
-            parentCategory.parentTaskId,
-            updatedChildrenIds,
-            colorSelection,
+          const result = await updateChildInCategory(
+            parentCategory.id, // categoryId
+            selectedSearchItem.id, // taskId
+            unitSelection, // numberOfUnits
             token
           );
-
           if (result.success) {
             toast.success("Category updated successfully");
             // Refresh categories after successful update
@@ -482,50 +470,44 @@ const HierarchicalList = () => {
   };
   const confirmRemoveChild = async () => {
     try {
-      // Find the parent category of this child
-      const findParentWithChild = (items, childId) => {
+      // Find the child and its parent
+      const findChildAndParent = (items, childId) => {
         for (const item of items) {
-          if (item.children?.some((child) => child.id === childId)) {
-            return item;
+          if (item.children) {
+            for (const child of item.children) {
+              if (child.id === childId) {
+                return { child, parent: item };
+              }
+            }
           }
           if (item.children?.length > 0) {
-            const result = findParentWithChild(item.children, childId);
+            const result = findChildAndParent(item.children, childId);
             if (result) return result;
           }
         }
-        return null;
+        return { child: null, parent: null };
       };
 
-      const parentCategory = findParentWithChild(items, itemToRemove.id);
+      const { child, parent } = findChildAndParent(items, itemToRemove.id);
 
-      if (parentCategory) {
-        // Filter out the child to remove
-        const updatedChildrenIds = parentCategory.children
-          .filter((child) => child.id !== itemToRemove.id)
-          .map((child) => child.taskId || child.id);
-
-        // Update the category with the new children list
-        const result = await updateCategory(
-          parentCategory.id,
-          parentCategory.title,
-          `Updated category for ${parentCategory.title}`,
-          parentCategory.parentTaskId,
-          updatedChildrenIds,
-          parentCategory.color,
+      if (child && parent) {
+        // Use the new API function with just categoryId and taskId
+        const result = await deleteChildTasksCategory(
+          parent.id, // categoryId
+          child.taskId, // taskId
           token
         );
 
         if (result.success) {
           toast.success("Task removed from category successfully");
-          // Refresh categories after successful update
           refreshCategories();
         } else {
-          const errorMessage = result?.error || "Failed to update category";
+          const errorMessage = result?.error || "Failed to remove task from category";
           setError(errorMessage);
           toast.error(errorMessage);
         }
       } else {
-        toast.error("Parent category not found");
+        toast.error("Task not found");
       }
     } catch (err) {
       toast.error("An error occurred while removing the task");
@@ -535,6 +517,7 @@ const HierarchicalList = () => {
       setItemToRemove(null);
     }
   };
+
   // Function to confirm delete
   const confirmDelete = async () => {
     try {
@@ -674,13 +657,15 @@ const HierarchicalList = () => {
               </>
             )}
             {isChild && (
-              <button
-                onClick={(e) => handleDeleteChild(item, e)}
-                className="action-button delete"
-                title="Remove from category"
-              >
-                <Trash2 size={16} />
-              </button>
+              <>
+                <button
+                  onClick={(e) => handleDeleteChild(item, e)}
+                  className="action-button delete"
+                  title="Remove from category"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </>
             )}
           </div>
         </div>

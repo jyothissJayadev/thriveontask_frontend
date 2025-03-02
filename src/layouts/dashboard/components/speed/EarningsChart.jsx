@@ -1,15 +1,12 @@
-// src/components/EarningsWithChart.jsx
 import React, { useEffect, useRef, useMemo } from "react";
-import { Box, Paper, Typography, useTheme } from "@mui/material";
-import ReactEChart from "./ReactEChart"; // Ensure correct path
+import { Box, Paper, Typography, useTheme, CircularProgress } from "@mui/material";
+import ReactEChart from "./ReactEChart";
 import * as echarts from "echarts/core";
-import { CanvasRenderer } from "echarts/renderers"; // Import the renderer
-
-// Register ECharts components and charts
+import { CanvasRenderer } from "echarts/renderers";
+import PropTypes from "prop-types";
 import { BarChart, GaugeChart, LineChart } from "echarts/charts";
 import { TooltipComponent, TitleComponent, LegendComponent } from "echarts/components";
 
-// Registering everything needed for your chart to work
 echarts.use([
   CanvasRenderer,
   BarChart,
@@ -20,10 +17,14 @@ echarts.use([
   LegendComponent,
 ]);
 
-const EarningsWithChart = () => {
+const EarningsWithChart = ({ timeframe, speed }) => {
   const theme = useTheme();
   const chartRef = useRef(null);
 
+  // If speed is missing or invalid, set a default value
+  const numSpeed = parseInt(speed, 10) || 0; // Defaults to 0 if speed is invalid
+
+  // Create the chart option regardless of loading state - this is key to fixing the issue
   const option = useMemo(
     () => ({
       series: [
@@ -78,13 +79,13 @@ const EarningsWithChart = () => {
           },
           data: [
             {
-              value: 80, // Example value
+              value: numSpeed,
             },
           ],
         },
       ],
     }),
-    [theme]
+    [theme, numSpeed]
   );
 
   useEffect(() => {
@@ -103,7 +104,7 @@ const EarningsWithChart = () => {
   return (
     <Paper sx={{ p: { xs: 4, sm: 8 }, height: 1, backgroundColor: "#141826" }}>
       <Typography variant="h4" color="common.white" mb={2.5}>
-        Weekly Speed
+        {timeframe}
       </Typography>
 
       <Box
@@ -112,17 +113,31 @@ const EarningsWithChart = () => {
           position: "relative",
         }}
       >
-        <ReactEChart
-          ref={chartRef}
-          option={option}
-          echarts={echarts}
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            flex: "1 1 0%",
-            maxHeight: 152,
-          }}
-        />
+        {numSpeed === 0 ? (
+          // Show loading indicator but keep the same hooks structure
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "152px", // Match the height of the chart
+            }}
+          >
+            <CircularProgress color="primary" />
+          </Box>
+        ) : (
+          <ReactEChart
+            ref={chartRef}
+            option={option}
+            echarts={echarts}
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              flex: "1 10%",
+              maxHeight: 152,
+            }}
+          />
+        )}
         <Typography
           variant="h1"
           color="common.white"
@@ -133,11 +148,16 @@ const EarningsWithChart = () => {
           right={0}
           bottom={0}
         >
-          80%
+          {numSpeed} Spu
         </Typography>
       </Box>
     </Paper>
   );
+};
+
+EarningsWithChart.propTypes = {
+  timeframe: PropTypes.string.isRequired,
+  speed: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired, // Accept both string and number
 };
 
 export default EarningsWithChart;

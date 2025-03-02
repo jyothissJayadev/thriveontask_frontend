@@ -14,7 +14,7 @@ import {
 import { createNote, getNotes, updateNote, deleteNote } from "../../../api/api";
 import "./StickyNotesApp.css";
 import toast, { Toaster } from "react-hot-toast";
-
+import SendIcon from "@mui/icons-material/Send";
 const StickyNotesApp = () => {
   // State management
   const [notes, setNotes] = useState([]);
@@ -374,7 +374,18 @@ const StickyNotesApp = () => {
   return (
     <div className="sticky-notes-app">
       <header className="app-header">
-        <h1>Sticky Wall</h1>
+        <h1>Sticky Wall</h1>{" "}
+        <a
+          href="https://quicknote.io/" // External link URL
+          target="_blank" // Opens link in a new tab
+          rel="noopener noreferrer" // Security best practices
+          style={{ textDecoration: "none", display: "block" }}
+        >
+          <button className="new-note-btn">
+            <SendIcon size={20} />
+            <span>Share Note</span>
+          </button>
+        </a>
         <button className="new-note-btn" onClick={createNewNote}>
           <Plus size={20} />
           <span>New Note</span>

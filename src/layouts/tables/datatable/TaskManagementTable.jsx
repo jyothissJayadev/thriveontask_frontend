@@ -29,7 +29,7 @@ import { styled } from "@mui/system";
 import { FiMoreVertical, FiSearch } from "react-icons/fi";
 import MDBox from "components/MDBox";
 import { getTasks, updateTask, deleteTask } from "../../../api/api"; // Adjust according to your API setup
-
+import toast, { Toaster } from "react-hot-toast";
 // Styles
 import "./TaskManagementTable.css"; // Import the separate CSS file
 
@@ -170,6 +170,11 @@ const TaskManagementTable = () => {
 
   const handleSaveEdit = async () => {
     try {
+      // Validate the form before saving
+      if (!validateEditForm()) {
+        return;
+      }
+
       const token = localStorage.getItem("jwtToken");
       const response = await updateTask(token, editedTask._id, editedTask);
 
@@ -177,6 +182,7 @@ const TaskManagementTable = () => {
         // Update the tasks list with the edited task
         setTasks(tasks.map((task) => (task._id === editedTask._id ? editedTask : task)));
         showSnackbar("Task updated successfully");
+        window.location.reload();
       } else {
         showSnackbar(response.error || "Failed to update task", "error");
       }
@@ -203,7 +209,13 @@ const TaskManagementTable = () => {
       showSnackbar("Error deleting task", "error");
     }
   };
-
+  const validateEditForm = () => {
+    if (editedTask.completedUnits > editedTask.numberOfUnits - 1) {
+      showSnackbar("Completed units cannot exceed the total number of units", "error");
+      return false;
+    }
+    return true;
+  };
   const handleEditChange = (field, value) => {
     setEditedTask({
       ...editedTask,
@@ -315,13 +327,28 @@ const TaskManagementTable = () => {
                         <TableCell>{calculateRemainingTime(task.endDate)}</TableCell>
                         <TableCell>{task.priority || 0}</TableCell>
                         <TableCell>
-                          <IconButton
-                            size="small"
-                            aria-label="more"
-                            onClick={(e) => handleMenuOpen(e, task)}
+                          <Tooltip
+                            title={
+                              task.lock === 1 || task.lock === 2
+                                ? "This task is locked"
+                                : "More actions"
+                            }
                           >
-                            <FiMoreVertical />
-                          </IconButton>
+                            <span>
+                              <IconButton
+                                size="small"
+                                aria-label="more"
+                                onClick={(e) =>
+                                  task.lock === 1 || task.lock === 2
+                                    ? toast.error("This task is locked and cannot be modified")
+                                    : handleMenuOpen(e, task)
+                                }
+                                disabled={task.lock === 1 || task.lock === 2}
+                              >
+                                <FiMoreVertical />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -469,6 +496,26 @@ const TaskManagementTable = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 5000,
+          style: {
+            background: "#363636",
+            color: "#fff",
+          },
+          success: {
+            style: {
+              background: "#4CAF50",
+            },
+          },
+          error: {
+            style: {
+              background: "#F44336",
+            },
+          },
+        }}
+      />
     </MDBox>
   );
 };

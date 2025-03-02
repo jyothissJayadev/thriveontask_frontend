@@ -128,7 +128,7 @@ html {
 }
 
 .task-cube {
-  background: linear-gradient(to bottom right, white, var(--gray-50));
+  /* background: linear-gradient(to bottom right, rgb(194, 40, 150), var(--gray-50)); */
   padding: 0.75rem;
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -352,19 +352,24 @@ html {
 
 /* Style for completed tasks (priority 0) */
 .task-completed {
-  opacity: 0.5;
+  opacity: 0.4;
   position: relative;
 }
 
 .task-completed::after {
   content: "";
   position: absolute;
-  top: 50%;
+  top: 0;
   left: 0;
   right: 0;
-  height: 2px;
-  background-color: var(--gray-600);
-  transform: translateY(-50%);
+  bottom: 0;
+  /* background-image: url("path-to-your-scratch-image.png"); Replace with actual path */
+  /* Or use SVG as background */
+  background-image: url("https://www.pngplay.com/wp-content/uploads/12/Scratches-PNG-HD-Free-File-Download.png");
+  background-size: cover;
+  background-repeat: no-repeat;
+  pointer-events: none; /* So it doesn't interfere with clicks */
+  z-index: 1;
 }
 
 /* Timeframe filter styles */

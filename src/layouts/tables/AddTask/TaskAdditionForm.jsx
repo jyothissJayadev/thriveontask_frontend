@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import PropTypes from "prop-types"; // Import prop-types
 import { createTask } from "api/api"; // Assuming the createTask API function is in api.js
 import "./TaskAdditionForm.css";
-
+import { createSpeed } from "api/api";
 const TaskAdditionForm = ({ onClose, timeframe }) => {
   const [formData, setFormData] = useState({
     taskName: "",
@@ -62,6 +62,19 @@ const TaskAdditionForm = ({ onClose, timeframe }) => {
     validateField(name, value);
   };
 
+  // Call the createSpeed API
+  const createSpeedRecord = async () => {
+    if (token) {
+      try {
+        const data = await createSpeed(token);
+        console.log("Speed created successfully:", data);
+        // Handle the response as needed
+      } catch (error) {
+        console.error("Error creating speed:", error);
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -84,6 +97,7 @@ const TaskAdditionForm = ({ onClose, timeframe }) => {
       );
       if (response.success) {
         toast.success("Task added successfully!");
+        createSpeedRecord();
         // Set a timer of 3 seconds before closing
         setTimeout(() => {
           onClose();

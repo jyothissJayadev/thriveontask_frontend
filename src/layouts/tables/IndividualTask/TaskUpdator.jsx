@@ -10,7 +10,8 @@ import complete from "./complete1.mp3";
 import { updateCompletedUnits, getTaskById } from "api/api";
 import { useNavigate, useParams } from "react-router-dom";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-
+import toast, { Toaster } from "react-hot-toast";
+import { updateSpeedTasks } from "api/api";
 const TaskUpdator = () => {
   const { taskId } = useParams();
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ const TaskUpdator = () => {
   const audioRef = useRef(null);
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
+  const hasShownToast = useRef(false);
 
   // Function to generate the array with length and the number of `true` values at the beginning
   const generateArray = (length, trueCount) => {
@@ -124,7 +126,7 @@ const TaskUpdator = () => {
             }
 
             // Then navigate
-            navigate("/tasks");
+            navigate("/tasks", { state: { message: "All tasks completed successfully!" } });
           }, 500);
         }
       };
@@ -132,7 +134,12 @@ const TaskUpdator = () => {
       requestAnimationFrame(drawScratch);
     }
   }, [showScratchAnimation]);
-
+  useEffect(() => {
+    if (task && task.lock === 2 && !hasShownToast.current) {
+      toast.error("The Parent Task Cannot be Modified.");
+      hasShownToast.current = true; // Mark toast as shown
+    }
+  }, [task]);
   // Fetch task data
   useEffect(() => {
     async function fetchTask() {
@@ -252,7 +259,29 @@ const TaskUpdator = () => {
       }, 2000);
     }
   }, [completedUnits, task, showScratchAnimation]);
+  function convertToSeconds(timestamp) {
+    // Parse the timestamp into a Date object
+    const date = new Date(timestamp);
 
+    // Get the time in milliseconds and convert it to seconds
+    return Math.floor(date.getTime() / 1000);
+  }
+  function calculateSpeed(createtime, endtime, updatetime) {
+    // Calculate the speed based on the provided formula
+    let speed = ((createtime - endtime) / (createtime - updatetime)) * 100;
+    console.log(createtime - updatetime);
+    // Cap the speed at 100 if it's greater than 100
+    if (speed > 100) {
+      speed = 100;
+    }
+
+    // Convert to a natural number if it's an integer
+    if (Number.isInteger(speed)) {
+      speed = Math.floor(speed); // Remove decimals and convert to natural number
+    }
+
+    return speed;
+  }
   const handleUnitClick = useCallback(
     async (index) => {
       if (!task) return;
@@ -291,12 +320,25 @@ const TaskUpdator = () => {
 
         // Get the current list of completed units (count of true values in taskUnits)
         const completedUnits = newUnits.filter(Boolean).length;
-
+        const createtime = convertToSeconds(task.createdAt);
+        const endtime = convertToSeconds(task.endDate);
+        const updatetime = Math.floor(Date.now() / 1000);
         // Call the updateCompletedUnits API to update the server with the new completed units
         const response = await updateCompletedUnits(task._id, completedUnits, token);
-
+        const speed = calculateSpeed(createtime, endtime, updatetime);
+        console.log(speed);
         if (response.success) {
           console.log("Successfully updated completed units.");
+          if (completedUnits === task.numberOfUnits) {
+            const response1 = await updateSpeedTasks(task._id, speed, token);
+            toast.success("The task has been Completed");
+            if (response1.message) {
+              console.log("Successfully updated speed.");
+            } else {
+              console.error("Error updating speed:");
+              // Optionally: Show an error message to the user
+            }
+          }
         } else {
           console.error("Error updating completed units:", response.error);
           // Optionally: Show an error message to the user
@@ -341,39 +383,6 @@ const TaskUpdator = () => {
         : "th";
     const formattedDate = format(date, `dd MMM hh:mm a`);
     return formattedDate.replace(day, `${day}${suffix}`);
-  }
-
-  function calculateRemainingTime(endTime) {
-    if (!endTime) return "";
-
-    const currentTime = new Date();
-    const endDate = new Date(endTime);
-    const remainingSeconds = differenceInSeconds(endDate, currentTime);
-
-    if (remainingSeconds <= 0) {
-      return "Time has passed";
-    }
-
-    const days = Math.floor(remainingSeconds / (3600 * 24));
-    const hours = Math.floor((remainingSeconds % (3600 * 24)) / 3600);
-    const minutes = Math.floor((remainingSeconds % 3600) / 60);
-    const seconds = remainingSeconds % 60;
-
-    const roundedSeconds = seconds >= 30 ? 60 : 0;
-    const finalMinutes = minutes + (roundedSeconds === 60 ? 1 : 0);
-    const finalSeconds = roundedSeconds === 60 ? 0 : seconds;
-
-    const timeParts = [];
-    if (days > 0) timeParts.push(`${days} day${days > 1 ? "s" : ""}`);
-    if (hours > 0) timeParts.push(`${hours} hour${hours > 1 ? "s" : ""}`);
-    if (finalMinutes > 0) timeParts.push(`${finalMinutes} minute${finalMinutes > 1 ? "s" : ""}`);
-    if (finalSeconds > 0) timeParts.push(`${finalSeconds} second${finalSeconds > 1 ? "s" : ""}`);
-
-    return timeParts.join(", ");
-  }
-
-  if (loading) {
-    return <div className="loading-container">Loading task...</div>;
   }
 
   if (!task) {
@@ -558,17 +567,45 @@ const TaskUpdator = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.8 }}
                   className={`action-button ${
-                    currentUnit < task.numberOfUnits ? "active" : "disabled"
+                    task.lock === 2
+                      ? "disabled"
+                      : currentUnit < task.numberOfUnits
+                      ? "active"
+                      : "disabled"
                   }`}
                   onClick={() => handleUnitClick(currentUnit)}
-                  disabled={currentUnit >= task.numberOfUnits}
+                  disabled={task.lock === 2 || currentUnit >= task.numberOfUnits}
                 >
-                  {currentUnit < task.numberOfUnits ? "Complete Next Unit" : "All Units Completed"}
+                  {task.lock === 2
+                    ? "Task Locked"
+                    : currentUnit < task.numberOfUnits
+                    ? "Complete Next Unit"
+                    : "All Units Completed"}
                 </motion.button>
               </div>
             </>
           )}
         </div>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 5000,
+            style: {
+              background: "#363636",
+              color: "#fff",
+            },
+            success: {
+              style: {
+                background: "#4CAF50",
+              },
+            },
+            error: {
+              style: {
+                background: "#F44336",
+              },
+            },
+          }}
+        />
       </div>
     </DashboardLayout>
   );

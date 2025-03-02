@@ -455,7 +455,7 @@
   width: 100%;
   height: 12px;
   background-color: #e5e7eb;
-  border-radius: 40 px;
+  border-radius: 40px;
   margin-top: 6px;
   position: relative;
   overflow: hidden;
@@ -494,4 +494,14 @@
 
 .item-row {
   transition: background-color 0.3s ease;
+}
+.loading_con {
+  background-color: black;
+  position: fixed;
+  z-index: 9999;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

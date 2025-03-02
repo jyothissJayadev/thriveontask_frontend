@@ -133,8 +133,8 @@ const TaskList = ({ tasks, Title }) => {
             </thead>
             <tbody>
               {/* Map over the current tasks for the current page */}
-              {currentTasks.map((task) => (
-                <tr key={task.id} className="task-row" style={{ backgroundColor: task.color }}>
+              {currentTasks.map((task, index) => (
+                <tr key={index} className="task-row" style={{ backgroundColor: task.color }}>
                   <td className="task-name">{task.taskName}</td>
                   <td className="task-cell">
                     <div className="progress-container">
@@ -201,15 +201,16 @@ const TaskList = ({ tasks, Title }) => {
 TaskList.propTypes = {
   tasks: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.number.isRequired,
+      // id: PropTypes.number.isRequired,
       taskName: PropTypes.string.isRequired,
-      percentComplete: PropTypes.number.isRequired,
-      duration: PropTypes.string.isRequired,
-      timeLeft: PropTypes.string.isRequired,
+      // percentComplete: PropTypes.number.isRequired,
+      // duration: PropTypes.string.isRequired,
+      // timeLeft: PropTypes.string.isRequired,
       color: PropTypes.string.isRequired,
       completedUnits: PropTypes.number.isRequired,
       numberOfUnits: PropTypes.number.isRequired,
       createdAt: PropTypes.string.isRequired,
+      _id: PropTypes.string,
       endDate: PropTypes.string.isRequired,
     })
   ).isRequired,

@@ -6,7 +6,7 @@ import "./TaskManagementDashboard.css";
 import MDBox from "components/MDBox";
 import TaskAdditionForm from "../AddTask/TaskAdditionForm";
 import { getTasks, createTask } from "api/api"; // Importing API functions
-
+import toast, { Toaster } from "react-hot-toast";
 const TaskManagementDashboard = () => {
   const [activeModal, setActiveModal] = useState(null);
   const [addTaskTimeframe, setAddTaskTimeframe] = useState(null);
@@ -37,7 +37,10 @@ const TaskManagementDashboard = () => {
             createdAt,
             endDate,
             updatedAt,
-            priority, // Make sure the API returns this field
+            priority,
+            color,
+            lock,
+            category, // Make sure the API returns this field
           } = task;
           const completion = (completedUnits / numberOfUnits) * 100;
 
@@ -50,7 +53,11 @@ const TaskManagementDashboard = () => {
             endDate: endDate,
             updatedAt: updatedAt,
             numberOfUnits: numberOfUnits,
-            priority: priority, // Store the priority in taskObject
+            priority: priority,
+            color: color,
+            lock: lock,
+            category: category,
+            // Store the priority in taskObject
           };
 
           if (timeframe === "day") {
@@ -161,6 +168,7 @@ const TaskManagementDashboard = () => {
     <div
       onClick={() => onClick(task)}
       className={`task-cube ${task.priority === 0 ? "task-completed" : ""}`}
+      style={{ background: task.color }}
     >
       <h3 className="task-title">{task.name}</h3>
       <div className="progress-container">
@@ -176,9 +184,10 @@ const TaskManagementDashboard = () => {
     task: PropTypes.shape({
       id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
-      completion: PropTypes.string.isRequired,
+      completion: PropTypes.number.isRequired,
       remaining: PropTypes.string.isRequired,
       priority: PropTypes.number,
+      color: PropTypes.string.isRequired,
     }).isRequired,
     onClick: PropTypes.func.isRequired,
   };
@@ -263,7 +272,7 @@ const TaskManagementDashboard = () => {
       PropTypes.shape({
         id: PropTypes.string.isRequired,
         name: PropTypes.string.isRequired,
-        completion: PropTypes.string.isRequired,
+        completion: PropTypes.number.isRequired,
         remaining: PropTypes.string.isRequired,
       })
     ).isRequired,
@@ -420,7 +429,27 @@ const TaskManagementDashboard = () => {
           setActiveModal(null);
         }}
       />{" "}
-      <TimeframeFilter />
+      <TimeframeFilter />{" "}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: "#363636",
+            color: "#fff",
+          },
+          success: {
+            style: {
+              background: "#4CAF50",
+            },
+          },
+          error: {
+            style: {
+              background: "#F44336",
+            },
+          },
+        }}
+      />
     </div>
   );
 };
