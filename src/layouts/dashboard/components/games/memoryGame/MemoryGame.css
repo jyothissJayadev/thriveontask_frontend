@@ -1,7 +1,7 @@
 .memory-game-container {
-  max-width: 800px;
+  max-width: 900px;
   width: 90%;
-  background-color: white;
+  background-color: #00000070;
   border-radius: 10px;
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
   padding: 30px;
@@ -11,8 +11,8 @@
   align-items: center;
 }
 
-h1 {
-  color: #2c3e50;
+.memory-game-container h1 {
+  color: #ffffff;
   margin-bottom: 20px;
   text-align: center;
   font-size: 2.5rem;
@@ -36,7 +36,7 @@ h1 {
 .size-selector label {
   margin-right: 10px;
   font-weight: bold;
-  color: #34495e;
+  color: #ffffff;
 }
 
 .button-group {
@@ -221,6 +221,24 @@ h1 {
   color: #34495e;
 }
 
+.final-score {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.final-score span {
+  color: #2ecc71;
+  font-size: 1.5rem;
+}
+
+.score-rating {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #3498db;
+  margin-bottom: 25px;
+}
+
 .game-over button {
   background-color: #3498db;
   color: white;
@@ -257,8 +275,8 @@ h1 {
   }
 }
 
-/* Responsive Design */
-@media (max-width: 600px) {
+/* Responsive Design for different grid sizes */
+@media (max-width: 900px) {
   .memory-game-container {
     padding: 15px;
   }
@@ -275,8 +293,27 @@ h1 {
   .reset-button {
     margin: 5px 0;
   }
+}
 
+/* Small screens */
+@media (max-width: 600px) {
   .card-back span {
+    font-size: 1rem;
+  }
+
+  /* Adjust font size for smaller cards in larger grids */
+  .card-grid[style*="repeat(8, 1fr)"] .card-back span {
+    font-size: 0.8rem;
+  }
+}
+
+/* 8x8 specific adjustments */
+@media (min-width: 601px) {
+  .card-grid[style*="repeat(8, 1fr)"] .card-back span {
     font-size: 1.2rem;
+  }
+
+  .card-grid[style*="repeat(8, 1fr)"] .card-front::before {
+    font-size: 1.5rem;
   }
 }

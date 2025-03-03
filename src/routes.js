@@ -46,6 +46,7 @@ import Blog from "layouts/blogging/Blog";
 import Matrix from "layouts/PriorityMatrix";
 import Hierarchicy from "layouts/HierarchicalList";
 import Notes from "layouts/Notes";
+import Word from "layouts/word/Word";
 
 const routes = [
   {
@@ -112,6 +113,14 @@ const routes = [
     icon: <Icon fontSize="small">book</Icon>,
     route: "/Blogging",
     component: <Blog />,
+  },
+  {
+    type: "collapse",
+    name: "Word(Docx)",
+    key: "Word(Docx)",
+    icon: <Icon fontSize="small">book</Icon>,
+    route: "/Word(Docx)",
+    component: <Word />,
   },
 ];
 

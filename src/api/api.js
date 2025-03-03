@@ -279,7 +279,37 @@ export const deleteTask = async (token, taskId) => {
     }
   }
 };
-
+export const deleteCompletedTasksByTimeframe = async (token, timeframe) => {
+  try {
+    console.log(timeframe);
+    const response = await axiosInstance.delete(
+      `/tasks/tasks/${timeframe}/delete-completed`, // Endpoint to delete tasks by timeframe
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.message || error.message,
+      };
+    } else if (error.request) {
+      console.error("No response received from server", error.request);
+      return {
+        success: false,
+        error: "No response received from server.",
+      };
+    } else {
+      console.error("Error in setting up the request", error.message);
+      return {
+        success: false,
+        error: error.message || "An unexpected error occurred.",
+      };
+    }
+  }
+};
 //api the notes backend
 // src/api.js
 
@@ -537,7 +567,7 @@ export const updateCompleteSpeed = async (addSpeed, token) => {
     };
 
     const response = await axiosInstance.put(
-      "/speed/complete-speed/update", // Backend endpoint to update complete speed
+      "tasks/speedsComplete", // Backend endpoint to update complete speed
       data,
       {
         headers: { Authorization: `Bearer ${token}` }, // Include token for authentication

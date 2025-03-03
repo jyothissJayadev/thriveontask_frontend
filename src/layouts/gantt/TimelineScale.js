@@ -610,7 +610,7 @@ const TimelineScale = () => {
           </button>
           {hasChanges && (
             <button onClick={saveChanges} className="save-button">
-              Save Changes5
+              Update Changes
             </button>
           )}
         </div>

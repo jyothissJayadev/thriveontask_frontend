@@ -309,12 +309,12 @@ const StickyNotesApp = () => {
 
   // Color options
   const colorOptions = [
-    { name: "Yellow", value: "#fff9c4" },
-    { name: "Blue", value: "#e0f7fa" },
-    { name: "Pink", value: "#ffebee" },
-    { name: "Orange", value: "#fff3e0" },
-    { name: "Green", value: "#e8f5e9" },
-    { name: "Purple", value: "#f3e5f5" },
+    { name: "Yellow", value: "#fbc02d" },
+    { name: "Blue", value: "#0277bd" },
+    { name: "Pink", value: "#c2185b" },
+    { name: "Orange", value: "#e65100" },
+    { name: "Green", value: "#388e3c" },
+    { name: "black", value: "#000000" },
   ];
 
   // Keyboard shortcuts

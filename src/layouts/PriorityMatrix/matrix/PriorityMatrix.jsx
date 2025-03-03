@@ -46,11 +46,12 @@ const PriorityMatrix = () => {
   const [error, setError] = useState(null);
 
   // Fetch tasks from API and organize by timeframe
+  // Update the fetchTasks function to filter out tasks with priority 0
   const fetchTasks = async () => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem("jwtToken"); // Assuming token is stored in localStorage
+      const token = localStorage.getItem("jwtToken");
       const response = await getTasks(token);
 
       if (response.success === false) {
@@ -65,18 +66,23 @@ const PriorityMatrix = () => {
       };
 
       response.tasks.forEach((task) => {
+        // Skip tasks with priority 0
+        if (task.priority === 0) {
+          return; // Skip this task
+        }
+
         // Transform API tasks to include necessary fields
         const transformedTask = {
           id: task._id || task.id,
           name: task.name || task.title || task.taskName,
-          time: task.estimatedTime || 0,
+          time: task.estimatedTime || task.duration || 0,
           progress: calculateProgress(task.completedUnits, task.numberOfUnits),
-          priority: getPriorityFromCode(task.priority), // Convert priority code to matrix container
+          priority: getPriorityFromCode(task.priority),
           endDate: task.endDate || null,
           numberOfUnits: task.numberOfUnits || 0,
           completedUnits: task.completedUnits || 0,
-          priorityCode: task.priority || 1, // Store the numerical priority code
-          timeframe: task.timeframe || "day", // Default to day if not specified
+          priorityCode: task.priority || 1,
+          timeframe: task.timeframe || "day",
         };
 
         // Add task to appropriate timeframe group
@@ -87,7 +93,6 @@ const PriorityMatrix = () => {
         } else if (task.timeframe === "month") {
           groupedTasks.month.push(transformedTask);
         } else {
-          // Default to day if timeframe is not specified
           groupedTasks.day.push(transformedTask);
         }
       });
@@ -104,7 +109,7 @@ const PriorityMatrix = () => {
 
   // Helper function to convert priority code to matrix container label
   const getPriorityFromCode = (priorityCode) => {
-    if (!priorityCode) return null;
+    if (!priorityCode || priorityCode === 0) return null;
 
     // Extract the first digit of the priority code
     const priorityFirstDigit = Math.floor(parseInt(priorityCode) / 100);
@@ -138,6 +143,7 @@ const PriorityMatrix = () => {
   const handleTimeframeChange = (direction) => {
     const timeframes = ["day", "week", "month"];
     const currentIndex = timeframes.indexOf(activeTimeframe);
+    console.log(tasks);
 
     if (direction === "next") {
       setActiveTimeframe(timeframes[(currentIndex + 1) % timeframes.length]);
@@ -350,15 +356,18 @@ const PriorityMatrix = () => {
     }
   };
 
-  // Filter tasks by priority for the current timeframe
   const getTasksByPriority = (priority) => {
-    return tasks[activeTimeframe].filter((task) => task.priority === priority);
+    return tasks[activeTimeframe].filter(
+      (task) => task.priority === priority && task.priorityCode !== 0
+    );
   };
 
+  // Update the getUnassignedTasks function
   const getUnassignedTasks = () => {
-    return tasks[activeTimeframe].filter((task) => task.priority === null);
+    return tasks[activeTimeframe].filter(
+      (task) => task.priority === null && task.priorityCode !== 0
+    );
   };
-
   // Render a task card
   const renderTaskCard = (task) => (
     <div

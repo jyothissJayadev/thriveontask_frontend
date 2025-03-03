@@ -16,7 +16,7 @@ html {
 }
 .dashboard-container {
   min-height: 100vh;
-  background-color: var(--gray-100);
+  background-color: #141826;
   padding: 0.5rem;
 }
 
@@ -35,7 +35,7 @@ html {
 .dashboard-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--gray-900);
+  color: white;
   margin-bottom: 1rem;
 }
 
@@ -70,6 +70,8 @@ html {
   padding: 1rem;
   border-radius: 0.75rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: #1f2942;
+  color: white;
 }
 
 @media (min-width: 640px) {
@@ -98,7 +100,7 @@ html {
 .section-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--gray-800);
+  color: white;
 }
 
 @media (min-width: 640px) {
@@ -365,7 +367,7 @@ html {
   bottom: 0;
   /* background-image: url("path-to-your-scratch-image.png"); Replace with actual path */
   /* Or use SVG as background */
-  background-image: url("https://www.pngplay.com/wp-content/uploads/12/Scratches-PNG-HD-Free-File-Download.png");
+  background-image: url("./scratch.png");
   background-size: cover;
   background-repeat: no-repeat;
   pointer-events: none; /* So it doesn't interfere with clicks */
@@ -405,7 +407,7 @@ html {
 .timeframe-filter h3 {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--gray-800);
+  color: white;
   margin: 0;
 }
 

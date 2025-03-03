@@ -3,7 +3,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-  background-color: #f5f5f5;
+  background-color: #141826;
   min-height: 100vh;
 }
 
@@ -16,7 +16,8 @@
 
 .app-header h1 {
   font-size: 28px;
-  color: #333;
+  color: #bdcdff;
+  font-family: Arial, Helvetica, sans-serif;
   margin: 0;
 }
 

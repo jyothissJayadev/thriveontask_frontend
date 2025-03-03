@@ -29,7 +29,7 @@ const HierarchicalList = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
-
+  const [parentTimeframe, setParentTimeframe] = useState(null);
   // Mock token - In a real app, you would get this from your auth system
   const token = localStorage.getItem("jwtToken");
 
@@ -56,6 +56,7 @@ const HierarchicalList = () => {
         ]);
 
         if (categoriesResponse.success) {
+          // In your useEffect function where you format categories from API response:
           const formattedCategories = categoriesResponse.categories.map((category) => ({
             id: category._id,
             title: category.name,
@@ -67,7 +68,8 @@ const HierarchicalList = () => {
             duration: category.parent_task
               ? calculateDuration(category.parent_task.createdAt, category.parent_task.endDate)
               : "N/A",
-            timeframe: "N/A",
+            // Extract timeframe from parent_task
+            timeframe: category.parent_task ? category.parent_task.timeframe : "N/A",
             color: category.color || "#f3f4f6",
             units: category.children ? category.children.length : 0,
             children: category.children
@@ -97,16 +99,19 @@ const HierarchicalList = () => {
         }
 
         if (tasksResponse.success) {
-          const formattedTasks = tasksResponse.tasks.map((task) => ({
-            id: task._id,
-            name: task.taskName,
-            duration: calculateDuration(task.createdAt, task.endDate),
-            timeframe: task.timeframe || "N/A",
-            numberOfUnits: task.numberOfUnits,
-            completedUnits: task.completedUnits,
-            color: task.color || "#f3f4f6",
-            isTask: true,
-          }));
+          const formattedTasks = tasksResponse.tasks
+            .filter((task) => task.priority !== 0) // Filter out tasks with priority=0
+            .map((task) => ({
+              id: task._id,
+              name: task.taskName,
+              duration: calculateDuration(task.createdAt, task.endDate),
+              timeframe: task.timeframe || "N/A",
+              numberOfUnits: task.numberOfUnits,
+              completedUnits: task.completedUnits,
+              color: task.color || "#f3f4f6",
+              priority: task.priority, // Make sure to include priority
+              isTask: true,
+            }));
 
           setAvailableTasks(formattedTasks);
         } else {
@@ -173,9 +178,68 @@ const HierarchicalList = () => {
     };
     setItems(updateSelected(items));
   };
+  const filterTasksByTimeframeHierarchy = (tasks, parentTimeframe) => {
+    if (!parentTimeframe) return tasks;
+
+    // Define the hierarchy in correct order (month > week > day)
+    const timeframeHierarchy = ["month", "week", "day"];
+    const parentLevel = timeframeHierarchy.indexOf(parentTimeframe.toLowerCase());
+
+    if (parentLevel === -1) return tasks; // If parent timeframe not in hierarchy, show all
+
+    return tasks.filter((task) => {
+      const taskTimeframe = task.timeframe ? task.timeframe.toLowerCase() : "";
+      const taskLevel = timeframeHierarchy.indexOf(taskTimeframe);
+
+      // Only show tasks with timeframe equal to or below parent in hierarchy
+      return taskLevel !== -1 && taskLevel >= parentLevel;
+    });
+  };
 
   const handleAddButtonClick = (parentId = null) => {
     setAddingToParentId(parentId);
+
+    // Find parent's timeframe if adding to a parent
+    if (parentId) {
+      const findParentTimeframe = (items, id) => {
+        for (const item of items) {
+          if (item.id === id) {
+            console.log("Found parent:", item); // Debug log
+            return item.timeframe;
+          }
+          if (item.children?.length > 0) {
+            const result = findParentTimeframe(item.children, id);
+            if (result) return result;
+          }
+        }
+        return null;
+      };
+
+      const timeframe = findParentTimeframe(items, parentId);
+      console.log("Parent timeframe found:", timeframe); // Debug log
+
+      // If timeframe is undefined or "N/A", try to find it from the parent's parent task
+      if (!timeframe || timeframe === "N/A") {
+        const parent = items.find((item) => item.id === parentId);
+        if (parent && parent.parentTaskId) {
+          // Look for the parent task in availableTasks
+          const parentTask = availableTasks.find((task) => task.id === parent.parentTaskId);
+          if (parentTask) {
+            console.log("Found parent task timeframe:", parentTask.timeframe);
+            setParentTimeframe(parentTask.timeframe);
+          } else {
+            setParentTimeframe(null);
+          }
+        } else {
+          setParentTimeframe(null);
+        }
+      } else {
+        setParentTimeframe(timeframe);
+      }
+    } else {
+      setParentTimeframe(null);
+    }
+
     setShowSearchContainer(true);
     setSearchQuery("");
   };
@@ -184,10 +248,13 @@ const HierarchicalList = () => {
     setSearchQuery(e.target.value);
   };
 
-  const filteredItems = availableTasks.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // Update the filteredItems calculation to filter out tasks with priority=0
+  const filteredItems = filterTasksByTimeframeHierarchy(
+    availableTasks
+      .filter((item) => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      .filter((item) => item.priority !== 0), // Filter out tasks with priority=0
+    parentTimeframe
   );
-
   const handleSearchItemClick = (selectedItem) => {
     setSelectedSearchItem(selectedItem);
     setShowSearchContainer(false);
@@ -704,12 +771,17 @@ const HierarchicalList = () => {
             <div className="modal-overlay">
               <div className="modal-container">
                 <div className="modal-header">
-                  <h3 className="modal-title">Add Item</h3>
+                  <h3 className="modal-title">
+                    {addingToParentId
+                      ? `Add Child Item ${
+                          parentTimeframe ? `(${parentTimeframe})` : "(No timeframe)"
+                        }`
+                      : "Add New Category"}
+                  </h3>
                   <button onClick={() => setShowSearchContainer(false)} className="close-button">
                     <X size={20} />
                   </button>
                 </div>
-
                 <div className="search-container">
                   <input
                     type="text"
@@ -720,7 +792,22 @@ const HierarchicalList = () => {
                   />
                   <Search size={18} className="search-icon" />
                 </div>
-
+                {/* Debug info */}
+                <div className="debug-info" style={{ fontSize: "12px", color: "#666" }}>
+                  <p>Parent ID: {addingToParentId || "None"}</p>
+                  <p>Parent timeframe: {parentTimeframe || "None"}</p>
+                </div>
+                {parentTimeframe && (
+                  <div className="filter-info">
+                    <p>
+                      Showing tasks with timeframe: <strong>{parentTimeframe}</strong> or lower in
+                      hierarchy
+                      {parentTimeframe.toLowerCase() === "month" && " (month, week, day)"}
+                      {parentTimeframe.toLowerCase() === "week" && " (week, day)"}
+                      {parentTimeframe.toLowerCase() === "day" && " (day only)"}
+                    </p>
+                  </div>
+                )}
                 <div className="search-results">
                   {filteredItems.length > 0 ? (
                     filteredItems.map((item) => (
@@ -746,11 +833,14 @@ const HierarchicalList = () => {
             </div>
           )}
           {/* Color and Unit Selection Form */}
+          {/* Color and Unit Selection Form */}
           {showColorUnitForm && selectedSearchItem && (
             <div className="modal-overlay">
               <div className="modal-container">
                 <div className="modal-header">
-                  <h3 className="modal-title">Configure Item</h3>
+                  <h3 className="modal-title">
+                    {addingToParentId ? "Add Child Item" : "Create Category"}
+                  </h3>
                   <button onClick={() => setShowColorUnitForm(false)} className="close-button">
                     <X size={20} />
                   </button>
@@ -763,34 +853,44 @@ const HierarchicalList = () => {
                   </p>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Select Color</label>
-                  <div className="color-grid">
-                    {colorOptions.map((color) => (
-                      <div
-                        key={color.value}
-                        onClick={() => setColorSelection(color.value)}
-                        className={`color-option ${
-                          colorSelection === color.value ? "selected" : ""
-                        }`}
-                        style={{ backgroundColor: color.value }}
-                        title={color.label}
-                      ></div>
-                    ))}
+                {/* Only show color selection for parent items */}
+                {addingToParentId === null && (
+                  <div className="form-group">
+                    <label className="form-label">Select Color</label>
+                    <div className="color-grid">
+                      {colorOptions.map((color) => (
+                        <div
+                          key={color.value}
+                          onClick={() => setColorSelection(color.value)}
+                          className={`color-option ${
+                            colorSelection === color.value ? "selected" : ""
+                          }`}
+                          style={{ backgroundColor: color.value }}
+                          title={color.label}
+                        ></div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="form-group">
-                  <label className="form-label">Number of Units</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={unitSelection}
-                    onChange={(e) => setUnitSelection(parseInt(e.target.value) || 1)}
-                    className="unit-input"
-                  />
-                </div>
+                {/* Only show units selection for child items */}
+                {addingToParentId !== null && (
+                  <div className="form-group">
+                    <label className="form-label">Number of Units</label>
+                    <div className="units-info">
+                      <p>Total Available: {selectedSearchItem.numberOfUnits || 0}</p>
+                      <p>Completed: {selectedSearchItem.completedUnits || 0}</p>
+                    </div>
+                    <input
+                      type="number"
+                      min="1"
+                      max={selectedSearchItem.numberOfUnits || 10}
+                      value={unitSelection}
+                      onChange={(e) => setUnitSelection(parseInt(e.target.value) || 1)}
+                      className="unit-input"
+                    />
+                  </div>
+                )}
 
                 <div className="modal-actions">
                   <button onClick={() => setShowColorUnitForm(false)} className="cancel-button">

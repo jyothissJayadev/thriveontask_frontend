@@ -144,11 +144,6 @@ function Dashboard() {
         </MDBox>
         <MDBox>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6} lg={12}>
-              <Box gridColumn={{ xs: "span 12", lg: "span 8" }} order={{ xs: 2, "2xl": 2 }}>
-                <TopOn />
-              </Box>
-            </Grid>
             <Grid item xs={12} md={6} lg={6}>
               <Box gridColumn={{ xs: "span 12", lg: "span 8" }} order={{ xs: 2, "2xl": 2 }}>
                 <EarningsWithChart timeframe={"today's speed"} speed={speedDay} />

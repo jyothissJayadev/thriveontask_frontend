@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./SnakeGame.css";
+import { updateCompleteSpeed } from "api/api"; // Import the API function
 
 const gridSize = 10;
 const initialSnake = [{ x: 5, y: 5 }];
@@ -34,6 +35,8 @@ const SnakeGame = () => {
   const [speed, setSpeed] = useState(initialSpeed);
   const [gameStarted, setGameStarted] = useState(false);
   const [countdown, setCountdown] = useState(null);
+  const [addSpeed, setAddSpeed] = useState(0); // State for speed to be added
+  const [speedMessage, setSpeedMessage] = useState(""); // Message to display speed bonus
   const gameIntervalRef = useRef();
   const gameContainerRef = useRef(null);
 
@@ -129,11 +132,47 @@ const SnakeGame = () => {
     return () => clearInterval(gameIntervalRef.current);
   }, [snake, direction, gameOver, gameStarted, countdown, speed]);
 
-  // Update high score when game over
+  // Update high score when game over and calculate speed bonus
   useEffect(() => {
-    if (gameOver && score > highScore) {
-      setHighScore(score);
-      localStorage.setItem("snakeGameHighScore", score.toString());
+    if (gameOver) {
+      // Update high score
+      if (score > highScore) {
+        setHighScore(score);
+        localStorage.setItem("snakeGameHighScore", score.toString());
+      }
+
+      // Calculate speed bonus based on score thresholds
+      let speedBonus = 0;
+      let message = "";
+
+      if (score > 30) {
+        speedBonus = 3;
+        message = "You gained +3 Speed for scoring over 30 points!";
+      } else if (score > 20) {
+        speedBonus = 2;
+        message = "You gained +2 Speed for scoring over 20 points!";
+      } else if (score > 10) {
+        speedBonus = 1;
+        message = "You gained +1 Speed for scoring over 10 points!";
+      }
+
+      setAddSpeed(speedBonus);
+      setSpeedMessage(message);
+
+      // Call API to update speed if there's a bonus
+      if (speedBonus > 0) {
+        const token = localStorage.getItem("jwtToken"); // Adjust based on your auth implementation
+
+        if (token) {
+          updateCompleteSpeed(speedBonus, token)
+            .then((response) => {
+              console.log("Speed updated successfully:", response);
+            })
+            .catch((error) => {
+              console.error("Failed to update speed:", error);
+            });
+        }
+      }
     }
   }, [gameOver, score, highScore]);
 
@@ -200,6 +239,8 @@ const SnakeGame = () => {
     setSpeed(initialSpeed);
     setGameStarted(true);
     setCountdown(3);
+    setAddSpeed(0);
+    setSpeedMessage("");
   };
 
   // Restart the game
@@ -269,6 +310,7 @@ const SnakeGame = () => {
           <div className="game-over-message">Game Over!</div>
           <div className="final-score">Your Score: {score}</div>
           <div className="final-high-score">High Score: {highScore}</div>
+          {speedMessage && <div className="speed-bonus">{speedMessage}</div>}
           <button className="restart-button" onClick={restartGame}>
             Play Again
           </button>

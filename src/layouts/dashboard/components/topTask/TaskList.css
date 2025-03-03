@@ -1,4 +1,4 @@
-/* TaskList.css */
+/* TaskList.css - Dark Mode */
 .task-list-container {
   width: 100%;
   padding: 0.5rem;
@@ -9,60 +9,157 @@
   border-collapse: collapse;
   table-layout: fixed;
   font-size: 0.65rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #1e1e1e;
+  color: #e0e0e0;
 }
 
 .table-header {
-  background-color: #f3f4f6;
+  background-color: #2d2d2d;
   text-align: left;
   font-weight: 500;
-  padding: 0.25rem;
+  padding: 0.5rem;
+  transition: background-color 0.3s;
+  color: #ffffff;
+}
+
+.table-header:hover {
+  background-color: #3d3d3d;
 }
 
 .task-row {
-  border-bottom: 1px solid #e5e7eb;
-  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #3d3d3d;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.task-row:hover {
+  background-color: rgba(80, 80, 80, 0.7) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+  position: relative;
+}
+
+.animate-in {
+  animation: fadeIn 0.5s forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .task-name {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 0.25rem;
+  padding: 0.5rem;
   font-weight: 500;
+  position: relative;
+}
+
+.task-name-hover {
+  position: relative;
+  cursor: pointer;
+}
+
+.task-name-hover:hover::after {
+  content: attr(data-content);
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #1e1e1e;
+  color: white;
+  padding: 5px;
+  border-radius: 4px;
+  z-index: 10;
+  min-width: 200px;
+  white-space: normal;
+  border: 1px solid #4d4d4d;
 }
 
 .task-cell {
-  padding: 0.25rem;
+  padding: 0.5rem;
   text-align: center;
+  transition: all 0.2s ease;
 }
 
-.progress-container {
+.progress-container5 {
   width: 100%;
-  background-color: rgba(229, 231, 235, 0.5);
+  background-color: rgba(60, 60, 60, 0.5);
   border-radius: 9999px;
   height: 0.35rem;
+  overflow: hidden;
 }
 
-.progress-bar {
+.progress-bar5 {
   height: 0.35rem;
   border-radius: 9999px;
+  transition: width 1s ease-in-out;
+}
+
+.progress-animate {
+  animation: progressGrow 1.5s ease-out;
+}
+
+@keyframes progressGrow {
+  0% {
+    width: 0%;
+  }
+}
+
+.last-updated {
+  font-weight: 500;
+  color: #b0b0b0;
+  position: relative;
+}
+
+.remaining-percentage {
+  font-weight: 700;
+  color: #d0d0d0;
+  transition: all 0.3s ease;
+}
+
+.remaining-percentage:hover {
+  transform: scale(1.1);
 }
 
 .pagination-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
   font-size: 0.65rem;
+  padding: 0 0.5rem;
 }
 
 .page-button {
   font-size: 0.65rem;
-  padding: 0.25rem 0.5rem;
-  background-color: #e5e7eb;
+  padding: 0.35rem 0.75rem;
+  background-color: #3d3d3d;
+  color: #e0e0e0;
   border-radius: 0.25rem;
   border: none;
   cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-button:not(:disabled):hover {
+  background-color: #4d4d4d;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .page-button:disabled {
@@ -70,6 +167,61 @@
   cursor: not-allowed;
 }
 
+.hover-effect:not(:disabled)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.4s ease-out;
+}
+
+.hover-effect:not(:disabled):hover::after {
+  transform: translate(-50%, -50%) scale(2);
+  opacity: 0;
+}
+
 .page-info {
   font-size: 0.65rem;
+  font-weight: 500;
+  color: #b0b0b0;
+}
+
+.time-warning {
+  color: #ff6b6b;
+  font-weight: 700;
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.header-pulse {
+  position: relative;
+}
+
+.header-pulse::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
 }

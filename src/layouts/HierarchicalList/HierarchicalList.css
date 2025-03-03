@@ -505,3 +505,20 @@
   align-items: center;
   justify-content: center;
 }
+.filter-info {
+  padding: 8px 16px;
+  background-color: #f0f9ff;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #0369a1;
+}
+.units-info {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #666;
+}
+
+.units-info p {
+  margin: 3px 0;
+}

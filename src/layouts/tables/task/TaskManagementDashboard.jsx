@@ -7,6 +7,7 @@ import MDBox from "components/MDBox";
 import TaskAdditionForm from "../AddTask/TaskAdditionForm";
 import { getTasks, createTask } from "api/api"; // Importing API functions
 import toast, { Toaster } from "react-hot-toast";
+import { deleteCompletedTasksByTimeframe } from "api/api";
 const TaskManagementDashboard = () => {
   const [activeModal, setActiveModal] = useState(null);
   const [addTaskTimeframe, setAddTaskTimeframe] = useState(null);
@@ -308,23 +309,33 @@ const TaskManagementDashboard = () => {
     const [showConfirm, setShowConfirm] = useState(false);
     const [showAlert, setShowAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState("");
+    const token = localStorage.getItem("jwtToken");
 
     const handleDeleteClick = (timeframe) => {
       setActiveTimeframe(timeframe);
       setShowConfirm(true);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
       setShowConfirm(false);
-      setAlertMessage(
-        `${activeTimeframe.charAt(0).toUpperCase() + activeTimeframe.slice(1)} is clicked.`
-      );
+      try {
+        const response = await deleteCompletedTasksByTimeframe(token, activeTimeframe);
+
+        if (response.success) {
+          setAlertMessage(`Completed tasks in ${activeTimeframe} have been deleted successfully.`);
+          // Refresh the tasks list
+          fetchTasks();
+          toast.success(`Deleted completed tasks in ${activeTimeframe}`);
+        } else {
+          setAlertMessage(`Error: ${response.error}`);
+          toast.error(`Failed to delete tasks: ${response.error}`);
+        }
+      } catch (error) {
+        setAlertMessage(`An unexpected error occurred: ${error.message}`);
+        toast.error(`An unexpected error occurred: ${error.message}`);
+      }
+
       setShowAlert(true);
-
-      // Here you would add the actual delete logic
-      console.log(`Deleting all tasks in timeframe: ${activeTimeframe}`);
-
-      // Reset active timeframe
       setActiveTimeframe(null);
     };
 
@@ -337,7 +348,7 @@ const TaskManagementDashboard = () => {
       <div className="timeframe-filter">
         <h3>Delete by Timeframe:</h3>
         <div className="filter-buttons">
-          {["all", "day", "week", "month"].map((timeframe) => (
+          {["day", "week", "month"].map((timeframe) => (
             <button
               key={timeframe}
               className={`filter-button ${activeTimeframe === timeframe ? "active" : ""}`}
@@ -353,7 +364,7 @@ const TaskManagementDashboard = () => {
           <div className="modal-overlay">
             <div className="modal-content">
               <h3>Confirm Delete</h3>
-              <p>Are you sure you want to delete all tasks in {activeTimeframe}?</p>
+              <p>Are you sure you want to delete all completed tasks in {activeTimeframe}?</p>
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem" }}>
                 <button
                   onClick={cancelDelete}

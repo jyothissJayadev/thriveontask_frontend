@@ -14,11 +14,11 @@ const CustomerFulfillment = ({ allUsersSpeedData = [] }) => {
   const specialUsers = {
     "67b2fe03970b1f0a9e9d6630": {
       pronoun: "she",
-      color: "#FF6B6B", // Custom color for this user
+      color: "#fa5ce8", // Custom color for this user
     },
     "67b2ff45970b1f0a9e9d6633": {
       pronoun: "he",
-      color: "#4ECDC4", // Custom color for this user
+      color: "#4a45f5", // Custom color for this user
     },
   };
 

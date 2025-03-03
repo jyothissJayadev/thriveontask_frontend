@@ -32,12 +32,13 @@
 }
 
 .view-button:not(.active) {
-  background-color: #e5e7eb;
-  color: #374151;
+  background-color: #000000;
+  color: #ffffff;
 }
 
 .view-button:not(.active):hover {
   background-color: #d1d5db;
+  color: #000;
 }
 
 .zoom-controls {
