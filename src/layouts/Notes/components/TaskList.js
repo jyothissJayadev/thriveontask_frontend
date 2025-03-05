@@ -365,7 +365,7 @@ const StickyNotesApp = () => {
   };
 
   if (isLoading) {
-    return <div className="loading">Loading notes...</div>;
+    return <div className="error-container">Loading notes...</div>;
   }
 
   if (error) {

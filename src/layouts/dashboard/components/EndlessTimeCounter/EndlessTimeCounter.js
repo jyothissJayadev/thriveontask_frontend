@@ -4,7 +4,7 @@ import "./EndlessTimeCounter.css";
 const EndlessTimeCounter = () => {
   // Set the starting time to March 3, 2025, 4:30 AM
   const [startTime] = useState(() => {
-    const start = new Date(2025, 2, 3, 4, 30, 0); // Month is 0-indexed in JS (2 means March)
+    const start = new Date(2025, 2, 5, 16, 30, 0); // Month is 0-indexed in JS (2 means March)
     return start;
   });
 
@@ -22,11 +22,14 @@ const EndlessTimeCounter = () => {
       const now = new Date();
       const difference = now - startTime;
 
-      // Calculate the difference in days, hours, minutes, and seconds
-      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+      // Ensure that no time value goes below 0
+      const days = Math.max(0, Math.floor(difference / (1000 * 60 * 60 * 24)));
+      const hours = Math.max(
+        0,
+        Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      );
+      const minutes = Math.max(0, Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)));
+      const seconds = Math.max(0, Math.floor((difference % (1000 * 60)) / 1000));
 
       setTime({ days, hours, minutes, seconds });
       setAnimate(true);

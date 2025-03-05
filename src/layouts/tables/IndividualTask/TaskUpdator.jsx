@@ -385,7 +385,7 @@ const TaskUpdator = () => {
   }
 
   if (!task) {
-    return <div className="error-container">Task not found</div>;
+    return <div className="error-container">Loading</div>;
   }
 
   const formattedDate = formatDate(task.createdAt);

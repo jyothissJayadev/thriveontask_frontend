@@ -12,6 +12,7 @@ const TaskManagementDashboard = () => {
   const [activeModal, setActiveModal] = useState(null);
   const [addTaskTimeframe, setAddTaskTimeframe] = useState(null);
   const token = localStorage.getItem("jwtToken");
+  const [isLoading, setIsLoading] = useState(true);
   const [tasks, setTasks] = useState({
     day: [],
     week: [],
@@ -81,6 +82,8 @@ const TaskManagementDashboard = () => {
       }
     } catch (error) {
       console.error("Error fetching tasks:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -419,6 +422,10 @@ const TaskManagementDashboard = () => {
       </div>
     );
   };
+
+  if (isLoading) {
+    return <div className="error-container plusecss">Loading tasks...</div>;
+  }
   return (
     <div className="dashboard-container">
       <div className="dashboard-content">
