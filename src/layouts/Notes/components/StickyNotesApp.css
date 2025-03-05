@@ -436,3 +436,9 @@
   padding-left: 20px;
   margin: 5px 0;
 }
+.new-note-btn-main {
+  background-color: rgb(32, 98, 126);
+}
+.new-note-btn-main:hover {
+  background-color: rgb(50, 128, 163);
+}

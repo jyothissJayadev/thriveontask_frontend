@@ -17,6 +17,7 @@ import SnakeGame from "./components/games/SnakeGame/SnakeGame";
 import { getSpeedForToday } from "api/api";
 import { getAllSpeedByUserId } from "api/api";
 import { getAllSpeedWithoutUserId } from "api/api";
+import EndlessTimeCounter from "./components/EndlessTimeCounter/EndlessTimeCounter";
 
 function Dashboard() {
   const [tasks, setTasks] = useState([]);
@@ -77,7 +78,7 @@ function Dashboard() {
         if (data && data.data) {
           // Extract completeSpeed values from the data array
           const speeds = data.data.map((item) => item.completeSpeed);
-
+          console.log(speeds);
           // Calculate the average speed
           const totalSpeed = speeds.reduce((acc, speed) => acc + speed, 0);
           const averageSpeed = speeds.length > 0 ? totalSpeed / speeds.length : 0;
@@ -172,6 +173,11 @@ function Dashboard() {
             <Grid item xs={12} md={6} lg={6}>
               <Box gridColumn={{ xs: "span 12", lg: "span 8" }} order={{ xs: 2, "2xl": 2 }}>
                 <SnakeGame />
+              </Box>
+            </Grid>{" "}
+            <Grid item xs={12} md={6} lg={12}>
+              <Box gridColumn={{ xs: "span 12", lg: "span 8" }} order={{ xs: 2, "2xl": 2 }}>
+                <EndlessTimeCounter />
               </Box>
             </Grid>
           </Grid>

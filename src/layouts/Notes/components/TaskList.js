@@ -10,6 +10,7 @@ import {
   ListOrdered,
   Plus,
   Save,
+  MessageSquareDashed,
 } from "lucide-react";
 import { createNote, getNotes, updateNote, deleteNote } from "../../../api/api";
 import "./StickyNotesApp.css";
@@ -385,8 +386,19 @@ const StickyNotesApp = () => {
             <SendIcon size={20} />
             <span>Share Note</span>
           </button>
+        </a>{" "}
+        <a
+          href="https://tlk.io/thriveon" // External link URL
+          target="_blank" // Opens link in a new tab
+          rel="noopener noreferrer" // Security best practices
+          style={{ textDecoration: "none", display: "block" }}
+        >
+          <button className="new-note-btn">
+            <MessageSquareDashed />
+            <span>Chit Chat</span>
+          </button>
         </a>
-        <button className="new-note-btn" onClick={createNewNote}>
+        <button className="new-note-btn new-note-btn-main" onClick={createNewNote}>
           <Plus size={20} />
           <span>New Note</span>
         </button>

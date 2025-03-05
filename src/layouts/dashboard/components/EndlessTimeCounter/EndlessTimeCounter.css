@@ -1,0 +1,153 @@
+.time-counter-container {
+  background-color: #1c1c1c;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  border-radius: 15px;
+  font-family: Arial, sans-serif;
+}
+
+.counter-heading {
+  color: #f0c14b;
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 48px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.counter-display {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+
+.time-box {
+  background-color: #2c2c2c;
+  border-radius: 8px;
+  padding: 16px;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.time-number {
+  font-size: 3.5rem;
+  font-weight: bold;
+  color: white;
+  padding: 16px;
+  background-color: #333;
+  border-radius: 4px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.time-number::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.time-label {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: #f0c14b;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.animate {
+  animation: pulse 0.5s ease-in-out;
+}
+
+.animate-seconds {
+  animation: secondsPulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+    color: #f0c14b;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes secondsPulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .counter-display {
+    gap: 12px;
+  }
+
+  .time-box {
+    min-width: 100px;
+    padding: 12px;
+  }
+
+  .time-number {
+    font-size: 2.5rem;
+    padding: 12px;
+  }
+
+  .counter-heading {
+    font-size: 1.8rem;
+    margin-bottom: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .counter-display {
+    gap: 8px;
+  }
+
+  .time-box {
+    min-width: 80px;
+    padding: 8px;
+  }
+
+  .time-number {
+    font-size: 2rem;
+    padding: 8px;
+  }
+
+  .time-label {
+    font-size: 0.8rem;
+    margin-top: 8px;
+  }
+
+  .counter-heading {
+    font-size: 1.5rem;
+    margin-bottom: 24px;
+  }
+}

@@ -10,16 +10,19 @@ const CustomerFulfillment = ({ allUsersSpeedData = [] }) => {
   const chartRef = useRef(null);
   console.log(allUsersSpeedData);
 
-  // Define special user IDs and their properties
-  const specialUsers = {
-    "67b2fe03970b1f0a9e9d6630": {
-      pronoun: "she",
-      color: "#fa5ce8", // Custom color for this user
-    },
-    "67b2ff45970b1f0a9e9d6633": {
-      pronoun: "he",
-      color: "#4a45f5", // Custom color for this user
-    },
+  // Generate random colors for users (for visual diversity)
+  const getRandomColor = () => {
+    const colors = [
+      "#fa5ce8",
+      "#4a45f5",
+      "#45c3f5",
+      "#45f5a2",
+      "#f5d045",
+      "#f57045",
+      "#8045f5",
+      "#f545a2",
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
   };
 
   // Process the data to format it for the chart
@@ -62,8 +65,8 @@ const CustomerFulfillment = ({ allUsersSpeedData = [] }) => {
     }
 
     return {
-      [user1.userId || "User 1"]: user1Speeds,
-      [user2.userId || "User 2"]: user2Speeds,
+      [user1.userName || "User 1"]: user1Speeds,
+      [user2.userName || "User 2"]: user2Speeds,
     };
   }, [allUsersSpeedData]);
 
@@ -72,29 +75,29 @@ const CustomerFulfillment = ({ allUsersSpeedData = [] }) => {
     return chartData.reduce((prev, current) => prev + current, 0);
   };
 
-  // Get user information for display, including pronouns
+  // Get user information for display, including names instead of pronouns
   const userInfo = useMemo(() => {
     if (!allUsersSpeedData || allUsersSpeedData.length < 2) {
       return [
-        { label: "User 1", pronoun: "", color: theme.palette.secondary.main },
-        { label: "User 2", pronoun: "", color: theme.palette.primary.main },
+        { label: "User 1", name: "", color: theme.palette.secondary.main },
+        { label: "User 2", name: "", color: theme.palette.primary.main },
       ];
     }
 
     return [
       {
-        label: allUsersSpeedData[0]?.userId
-          ? `User ${allUsersSpeedData[0].userId.substring(0, 5)}...`
+        label: allUsersSpeedData[0]?.userName
+          ? `User ${allUsersSpeedData[0].userName.substring(0, 5)}...`
           : "User 1",
-        pronoun: specialUsers[allUsersSpeedData[0]?.userId]?.pronoun || "",
-        color: specialUsers[allUsersSpeedData[0]?.userId]?.color || theme.palette.secondary.main,
+        name: allUsersSpeedData[0]?.userName || "",
+        color: getRandomColor(),
       },
       {
-        label: allUsersSpeedData[1]?.userId
-          ? `User ${allUsersSpeedData[1].userId.substring(0, 5)}...`
+        label: allUsersSpeedData[1]?.userName
+          ? `User ${allUsersSpeedData[1].userName.substring(0, 5)}...`
           : "User 2",
-        pronoun: specialUsers[allUsersSpeedData[1]?.userId]?.pronoun || "",
-        color: specialUsers[allUsersSpeedData[1]?.userId]?.color || theme.palette.primary.main,
+        name: allUsersSpeedData[1]?.userName || "",
+        color: getRandomColor(),
       },
     ];
   }, [allUsersSpeedData, theme]);
@@ -144,7 +147,7 @@ const CustomerFulfillment = ({ allUsersSpeedData = [] }) => {
       series: [
         {
           id: 1,
-          name: userInfo[0].label,
+          name: userInfo[0].name,
           type: "line",
           lineStyle: {
             width: 2,
@@ -172,7 +175,7 @@ const CustomerFulfillment = ({ allUsersSpeedData = [] }) => {
         },
         {
           id: 2,
-          name: userInfo[1].label,
+          name: userInfo[1].name,
           type: "line",
           lineStyle: {
             width: 2,
@@ -270,7 +273,7 @@ const CustomerFulfillment = ({ allUsersSpeedData = [] }) => {
               />
             }
           >
-            {userInfo[0].label} {userInfo[0].pronoun && `(${userInfo[0].pronoun})`}
+            {userInfo[0].name || userInfo[0].label}
           </Button>
           <Typography variant="body2" color="common.white">
             {getTotalFulfillment(Object.values(processedData)[0])}
@@ -304,7 +307,7 @@ const CustomerFulfillment = ({ allUsersSpeedData = [] }) => {
               />
             }
           >
-            {userInfo[1].label} {userInfo[1].pronoun && `(${userInfo[1].pronoun})`}
+            {userInfo[1].name || userInfo[1].label}
           </Button>
           <Typography variant="body2" color="common.white">
             {getTotalFulfillment(Object.values(processedData)[1])}

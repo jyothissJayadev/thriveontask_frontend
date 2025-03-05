@@ -39,6 +39,7 @@ const TimelineScale = () => {
         };
 
         data.tasks.forEach((task) => {
+          if (task.priority === 0) return;
           const {
             taskName,
             completedUnits,
@@ -156,22 +157,6 @@ const TimelineScale = () => {
   };
   const getProgressPercentage = (task) => {
     return (task.completion / task.numberOfUnits) * 100;
-  };
-
-  const formatDate = (dateString, format) => {
-    const date = new Date(dateString);
-    switch (format) {
-      case "hour":
-        return date.getHours().toString().padStart(2, "0") + ":00";
-      case "day":
-        return date.toLocaleDateString("en-US", {
-          weekday: "short",
-        });
-      case "date":
-        return date.getDate();
-      default:
-        return date.toLocaleDateString();
-    }
   };
 
   const generateTimeSlots = () => {
@@ -467,20 +452,6 @@ const TimelineScale = () => {
   };
 
   // Add this function to handle saving changes from the panel
-  const handleSaveTaskDetails = (startHour, startMinute, endHour, endMinute) => {
-    if (!selectedTask) return;
-
-    // Create new date objects based on the original dates
-    const newStartDate = new Date(selectedTask.startTime);
-    const newEndDate = new Date(selectedTask.endDate);
-
-    // Update only the time portion
-    newStartDate.setHours(startHour, startMinute);
-    newEndDate.setHours(endHour, endMinute);
-
-    updateTaskTimes(selectedTask.id, newStartDate.toISOString(), newEndDate.toISOString());
-    setSelectedTask(null); // Close the panel after saving
-  };
 
   // Add this function to handle close button click
   const handleCloseDetails = () => {
@@ -495,10 +466,6 @@ const TimelineScale = () => {
     return new Date(dateString).getMinutes();
   };
 
-  const formatTimeForDisplay = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
   const currentTasks = tasks[viewMode] || [];
   //newcosde
   // Add these handler functions to your TimelineScale component

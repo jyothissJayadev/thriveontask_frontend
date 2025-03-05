@@ -90,7 +90,7 @@ const TaskAdditionForm = ({ onClose, timeframe }) => {
       const response = await createTask(
         formData.taskName,
         parseInt(formData.units), // Ensure units is an integer
-        1, // completedUnits
+        0, // completedUnits
         formData.datetime,
         timeframe,
         token

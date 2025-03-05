@@ -68,10 +68,12 @@ const HierarchicalList = () => {
             duration: category.parent_task
               ? calculateDuration(category.parent_task.createdAt, category.parent_task.endDate)
               : "N/A",
-            // Extract timeframe from parent_task
             timeframe: category.parent_task ? category.parent_task.timeframe : "N/A",
             color: category.color || "#f3f4f6",
             units: category.children ? category.children.length : 0,
+            // Add these important fields for the parent
+            numberOfUnits: category.parent_task ? category.parent_task.numberOfUnits : 0,
+            completedUnits: category.parent_task ? category.parent_task.completedUnits : 0,
             children: category.children
               ? category.children.map((child) => ({
                   id: child._id,
@@ -86,6 +88,9 @@ const HierarchicalList = () => {
                   children: [],
                   taskId: child._id,
                   isTask: true,
+                  // Add these crucial fields to child tasks
+                  completedUnits: child.completedUnits || 0,
+                  numberOfUnits: child.numberOfUnits || 0,
                 }))
               : [],
             parentTaskId: category.parent_task ? category.parent_task._id : null,
@@ -198,7 +203,14 @@ const HierarchicalList = () => {
 
   const handleAddButtonClick = (parentId = null) => {
     setAddingToParentId(parentId);
+    setShowSearchContainer(true);
+    setSearchQuery("");
+    setSelectedSearchItem(null);
+    setShowColorUnitForm(false);
+    setUnitSelection(1);
 
+    // Set the parent ID
+    setAddingToParentId(parentId);
     // Find parent's timeframe if adding to a parent
     if (parentId) {
       const findParentTimeframe = (items, id) => {
@@ -290,159 +302,106 @@ const HierarchicalList = () => {
   const handleColorUnitSubmit = async () => {
     try {
       if (addingToParentId === null) {
-        // Creating a new category with the selected task as parent
+        // Creating a new category
         const result = await createCategory(
-          selectedSearchItem.name, // name
-          `Category for ${selectedSearchItem.name}`, // description
-          selectedSearchItem.id, // parent_task
-          [], // children (empty initially)
-          colorSelection, // color
+          selectedSearchItem.name,
+          `Category for ${selectedSearchItem.name}`,
+          selectedSearchItem.id,
+          [],
+          colorSelection,
           token
         );
 
         if (result.success) {
-          toast.success("Category created successfully");
-          // Refresh categories after successful creation
-          const categoriesResponse = await getCategories(token);
-          if (categoriesResponse.success) {
-            const formattedCategories = categoriesResponse.categories.map((category) => ({
-              id: category._id,
-              title: category.name,
-              subtitle: category.parent_task
-                ? `Parent: ${category.parent_task.taskName}`
-                : "No parent task",
-              selected: false,
-              expanded: false,
-              duration: category.parent_task
-                ? calculateDuration(category.parent_task.createdAt, category.parent_task.endDate)
-                : "N/A",
-              timeframe: "N/A",
-              color: category.color || "#f3f4f6",
-              units: category.children ? category.children.length : 0,
-              children: category.children
-                ? category.children.map((child) => ({
-                    id: child._id,
-                    title: child.taskName,
-                    subtitle: `Units: ${child.completedUnits}/${child.numberOfUnits}`,
-                    selected: false,
-                    expanded: false,
-                    duration: calculateDuration(child.createdAt, child.endDate),
-                    timeframe: child.timeframe || "N/A",
-                    color: category.color || "#f3f4f6",
-                    units: child.numberOfUnits || 0,
-                    children: [],
-                    taskId: child._id,
-                    isTask: true,
-                  }))
-                : [],
-              parentTaskId: category.parent_task ? category.parent_task._id : null,
-            }));
+          // Immediately update local state without waiting for full refresh
+          const newCategory = {
+            id: result.category._id, // Assuming the API returns the new category details
+            title: selectedSearchItem.name,
+            subtitle: `Parent: ${selectedSearchItem.name}`,
+            selected: false,
+            expanded: false,
+            duration: selectedSearchItem.duration,
+            timeframe: "N/A",
+            color: colorSelection,
+            numberOfUnits: selectedSearchItem.numberOfUnits || 0,
+            completedUnits: 0,
+            units: 0,
+            children: [],
+            parentTaskId: selectedSearchItem.id,
+          };
 
-            setItems(formattedCategories);
-          } else {
-            const errorMessage = categoriesResponse?.error || "Failed to refresh categories";
-            setError(errorMessage);
-            toast.error(errorMessage);
-          }
+          setItems((prevItems) => [...prevItems, newCategory]);
+          toast.success("Category created successfully");
         } else {
-          const errorMessage = result?.error || "Failed to create category";
-          setError(errorMessage);
-          toast.error(errorMessage);
+          toast.error(result?.error || "Failed to create category");
         }
       } else {
-        // Find the parent category to update
-        const findParentCategory = (items, id) => {
-          for (const item of items) {
-            if (item.id === id) {
+        // Adding child to existing category
+        const result = await updateChildInCategory(
+          addingToParentId,
+          selectedSearchItem.id,
+          unitSelection,
+          token
+        );
+
+        if (result.success) {
+          // Immediately update local state
+          setItems((prevItems) => {
+            return prevItems.map((item) => {
+              if (item.id === addingToParentId) {
+                // Create the new child task
+                const newChild = {
+                  id: selectedSearchItem.id,
+                  title: selectedSearchItem.name,
+                  subtitle: `Units: 0/${unitSelection}`,
+                  selected: false,
+                  expanded: false,
+                  duration: selectedSearchItem.duration,
+                  timeframe: selectedSearchItem.timeframe || "N/A",
+                  color: item.color,
+                  units: unitSelection,
+                  numberOfUnits: unitSelection,
+                  completedUnits: 0,
+                  children: [],
+                  taskId: selectedSearchItem.id,
+                  isTask: true,
+                };
+
+                // Update the parent's children
+                return {
+                  ...item,
+                  children: [...(item.children || []), newChild],
+                  units: (item.children ? item.children.length : 0) + 1,
+                };
+              }
               return item;
-            }
-            if (item.children?.length > 0) {
-              const result = findParentCategory(item.children, id);
-              if (result) return result;
-            }
-          }
-          return null;
-        };
+            });
+          });
 
-        const parentCategory = findParentCategory(items, addingToParentId);
-
-        if (parentCategory) {
-          const result = await updateChildInCategory(
-            parentCategory.id, // categoryId
-            selectedSearchItem.id, // taskId
-            unitSelection, // numberOfUnits
-            token
-          );
-          if (result.success) {
-            toast.success("Category updated successfully");
-            // Refresh categories after successful update
-            const categoriesResponse = await getCategories(token);
-            if (categoriesResponse.success) {
-              const formattedCategories = categoriesResponse.categories.map((category) => ({
-                id: category._id,
-                title: category.name,
-                subtitle: category.parent_task
-                  ? `Parent: ${category.parent_task.taskName}`
-                  : "No parent task",
-                selected: false,
-                expanded: false,
-                duration: category.parent_task
-                  ? calculateDuration(category.parent_task.createdAt, category.parent_task.endDate)
-                  : "N/A",
-                timeframe: "N/A",
-                color: category.color || "#f3f4f6",
-                units: category.children ? category.children.length : 0,
-                children: category.children
-                  ? category.children.map((child) => ({
-                      id: child._id,
-                      title: child.taskName,
-                      subtitle: `Units: ${child.completedUnits}/${child.numberOfUnits}`,
-                      selected: false,
-                      expanded: false,
-                      duration: calculateDuration(child.createdAt, child.endDate),
-                      timeframe: child.timeframe || "N/A",
-                      color: category.color || "#f3f4f6",
-                      units: child.numberOfUnits || 0,
-                      children: [],
-                      taskId: child._id,
-                      isTask: true,
-                    }))
-                  : [],
-                parentTaskId: category.parent_task ? category.parent_task._id : null,
-              }));
-
-              setItems(formattedCategories);
-            } else {
-              const errorMessage = categoriesResponse?.error || "Failed to refresh categories";
-              setError(errorMessage);
-              toast.error(errorMessage);
-            }
-          } else {
-            const errorMessage = result?.error || "Failed to update category";
-            setError(errorMessage);
-            toast.error(errorMessage);
-          }
+          toast.success("Category updated successfully");
         } else {
-          const errorMessage = "Parent category not found";
-          setError(errorMessage);
-          toast.error(errorMessage);
+          toast.error(result?.error || "Failed to update category");
         }
       }
     } catch (err) {
-      const errorMessage = "An error occurred while submitting";
-      setError(errorMessage);
-      toast.error(errorMessage);
+      toast.error("An error occurred while submitting");
       console.error(err);
     } finally {
       setShowColorUnitForm(false);
       setSelectedSearchItem(null);
+      setAddingToParentId(null);
     }
   };
   const calculateChildrenProgress = (children) => {
     if (!children || children.length === 0) return 0;
 
-    const totalUnits = children.reduce((sum, child) => sum + (child.numberOfUnits || 0), 0);
-    const completedUnits = children.reduce((sum, child) => sum + (child.completedUnits || 0), 0);
+    let totalUnits = 0;
+    let completedUnits = 0;
+
+    children.forEach((child) => {
+      if (child.numberOfUnits) totalUnits += child.numberOfUnits;
+      if (child.completedUnits) completedUnits += child.completedUnits;
+    });
 
     return totalUnits > 0 ? (completedUnits / totalUnits) * 100 : 0;
   };
@@ -650,11 +609,18 @@ const HierarchicalList = () => {
     const isChild = !isParent;
 
     // Calculate progress for the progress bar
-    const progress = item.isTask
-      ? (item.completedUnits / item.numberOfUnits) * 100
-      : item.children && item.children.length > 0
-      ? calculateChildrenProgress(item.children)
-      : 0;
+    let progress = 0;
+
+    if (item.isTask) {
+      // For child tasks
+      progress = item.numberOfUnits > 0 ? (item.completedUnits / item.numberOfUnits) * 100 : 0;
+    } else if (isParent && item.children && item.children.length > 0) {
+      // For parent categories using child task data
+      progress = calculateChildrenProgress(item.children);
+    } else if (isParent && item.numberOfUnits > 0) {
+      // For parent categories using parent_task data
+      progress = (item.completedUnits / item.numberOfUnits) * 100;
+    }
 
     return (
       <div key={item.id} className="item-wrapper">
@@ -673,7 +639,7 @@ const HierarchicalList = () => {
           <div className="icon-section">
             {depth > 0 && <div className="depth-spacer" style={{ width: `${depth * 24}px` }}></div>}
             <div className="avatar-container">
-              <div className="avatar">{item.title ? item.title.charAt(0) : "A"}</div>
+              <div className="avatar">{isParent ? item.numberOfUnits : item.numberOfUnits}</div>
             </div>
             {item.children && item.children.length > 0 && (
               <button onClick={() => toggleExpand(item.id)} className="expand-button">
@@ -690,7 +656,12 @@ const HierarchicalList = () => {
             </div>
             <div className="content-row">
               <span className="item-subtitle">{item.subtitle}</span>
-              <span className="item-units">Units: {item.units}</span>
+              <span className="item-units">
+                Units:{" "}
+                {isParent
+                  ? `${item.completedUnits}/${item.numberOfUnits}`
+                  : `${item.completedUnits}/${item.numberOfUnits}`}
+              </span>
             </div>
             {/* Progress bar */}
             <div className="progress1-container">
@@ -877,16 +848,97 @@ const HierarchicalList = () => {
                 {addingToParentId !== null && (
                   <div className="form-group">
                     <label className="form-label">Number of Units</label>
+
+                    {/* Add this block to show parent units info */}
+                    <div className="parent-units-info">
+                      {(() => {
+                        // Find the parent category to get its units info
+                        const findParentCategory = (items, id) => {
+                          for (const item of items) {
+                            if (item.id === id) {
+                              return item;
+                            }
+                            if (item.children?.length > 0) {
+                              const result = findParentCategory(item.children, id);
+                              if (result) return result;
+                            }
+                          }
+                          return null;
+                        };
+
+                        const parent = findParentCategory(items, addingToParentId);
+
+                        if (parent) {
+                          // Calculate total units already assigned to children
+                          const usedUnits = parent.children.reduce(
+                            (sum, child) => sum + (child.numberOfUnits || 0),
+                            0
+                          );
+
+                          // Calculate remaining units
+                          const remainingUnits = parent.numberOfUnits - usedUnits;
+
+                          return (
+                            <>
+                              <p>
+                                <strong>Parent Total Units:</strong> {parent.numberOfUnits}
+                              </p>
+                              <p>
+                                <strong>Remaining Units:</strong> {remainingUnits}
+                              </p>
+                              <p className="note">
+                                You cannot assign more than the remaining units.
+                              </p>
+                            </>
+                          );
+                        }
+
+                        return null;
+                      })()}
+                    </div>
+
                     <div className="units-info">
-                      <p>Total Available: {selectedSearchItem.numberOfUnits || 0}</p>
+                      <p>Task Available Units: {selectedSearchItem.numberOfUnits || 0}</p>
                       <p>Completed: {selectedSearchItem.completedUnits || 0}</p>
                     </div>
+
                     <input
                       type="number"
-                      min="1"
-                      max={selectedSearchItem.numberOfUnits || 10}
+                      max={(() => {
+                        // Find the parent category to get its units info
+                        const findParentCategory = (items, id) => {
+                          for (const item of items) {
+                            if (item.id === id) {
+                              return item;
+                            }
+                            if (item.children?.length > 0) {
+                              const result = findParentCategory(item.children, id);
+                              if (result) return result;
+                            }
+                          }
+                          return null;
+                        };
+
+                        const parent = findParentCategory(items, addingToParentId);
+
+                        if (parent) {
+                          // Calculate total units already assigned to children
+                          const usedUnits = parent.children.reduce(
+                            (sum, child) => sum + (child.numberOfUnits || 0),
+                            0
+                          );
+
+                          // Calculate remaining units
+                          const remainingUnits = parent.numberOfUnits - usedUnits;
+
+                          // Return the smaller of remaining units or task's available units
+                          return Math.min(remainingUnits, selectedSearchItem.numberOfUnits || 10);
+                        }
+
+                        return selectedSearchItem.numberOfUnits || 10;
+                      })()}
                       value={unitSelection}
-                      onChange={(e) => setUnitSelection(parseInt(e.target.value) || 1)}
+                      onChange={(e) => setUnitSelection(parseInt(e.target.value))}
                       className="unit-input"
                     />
                   </div>

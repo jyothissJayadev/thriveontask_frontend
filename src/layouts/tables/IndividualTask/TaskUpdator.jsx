@@ -269,7 +269,6 @@ const TaskUpdator = () => {
   function calculateSpeed(createtime, endtime, updatetime) {
     // Calculate the speed based on the provided formula
     let speed = ((createtime - endtime) / (createtime - updatetime)) * 100;
-    console.log(createtime - updatetime);
     // Cap the speed at 100 if it's greater than 100
     if (speed > 100) {
       speed = 100;
@@ -326,7 +325,7 @@ const TaskUpdator = () => {
         // Call the updateCompletedUnits API to update the server with the new completed units
         const response = await updateCompletedUnits(task._id, completedUnits, token);
         const speed = calculateSpeed(createtime, endtime, updatetime);
-        console.log(speed);
+
         if (response.success) {
           console.log("Successfully updated completed units.");
           if (completedUnits === task.numberOfUnits) {
