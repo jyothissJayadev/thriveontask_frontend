@@ -365,12 +365,10 @@ html {
   left: 0;
   right: 0;
   bottom: 0;
-  /* background-image: url("path-to-your-scratch-image.png"); Replace with actual path */
-  /* Or use SVG as background */
   background-image: url("./scratch.png");
   background-size: cover;
   background-repeat: no-repeat;
-  pointer-events: none; /* So it doesn't interfere with clicks */
+  pointer-events: none;
   z-index: 1;
 }
 
