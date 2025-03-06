@@ -4,7 +4,7 @@ import "./EndlessTimeCounter.css";
 const EndlessTimeCounter = () => {
   // Set the starting time to March 3, 2025, 4:30 AM
   const [startTime] = useState(() => {
-    const start = new Date(2025, 2, 5, 16, 30, 0); // Month is 0-indexed in JS (2 means March)
+    const start = new Date(2025, 2, 5, 18, 0, 0); // Month is 0-indexed in JS (2 means March)
     return start;
   });
 

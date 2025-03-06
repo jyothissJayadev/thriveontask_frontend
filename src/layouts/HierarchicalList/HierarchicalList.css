@@ -357,7 +357,8 @@
 .submit-button:hover {
   background-color: #1d4ed8;
 }
-* Add these new styles for the dropdown menu */ .menu-button {
+/* Add these new styles for the dropdown menu */
+.menu-button {
   padding: 0.25rem;
   border-radius: 0.25rem;
   margin-right: 0.25rem;

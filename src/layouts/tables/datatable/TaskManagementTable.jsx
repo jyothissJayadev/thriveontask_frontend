@@ -31,7 +31,7 @@ import MDBox from "components/MDBox";
 import { getTasks, updateTask, deleteTask } from "../../../api/api"; // Adjust according to your API setup
 import toast, { Toaster } from "react-hot-toast";
 // Styles
-import "./TaskManagementTable.css"; // Import the separate CSS file
+import "./TaskManagementTable.css";
 
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   margin: "20px",
