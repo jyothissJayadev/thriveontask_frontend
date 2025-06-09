@@ -14,7 +14,7 @@ import Button from "@mui/material/Button";
 import Icon from "@mui/material/Icon";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import jyothissProfile from "../../../assets/images/jyothiss.jpg";
-import aleenaProfile from "../../../assets/images/aleena.jpg";
+
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 
@@ -101,7 +101,7 @@ function DashboardNavbar({ absolute, light, isMini }) {
     </Menu>
   );
   const username = localStorage.getItem("username");
-  const profileSrc = username === "Mariam Aleena" ? aleenaProfile : jyothissProfile;
+  const profileSrc = jyothissProfile;
   const iconsStyle = ({ palette: { dark, white, text }, functions: { rgba } }) => ({
     color: () => {
       let colorValue = light || darkMode ? white.main : dark.main;
